@@ -17,6 +17,14 @@ For development, install [pre-commit](https://pre-commit.com/#installation) to r
 pre-commit install
 ```
 
+## Database
+
+PostgreSQL 17 (Docker) with Prisma as ORM and migration tool.
+
+1. Copy env: `cp .example.env .env` and adjust the values
+2. Start the database: `docker compose up -d`
+3. Apply migrations & generate the client: `npm run db:migrate`
+
 ## Development
 
 - **Frontend:** `npm run start:frontend` (port 4200)
@@ -33,6 +41,10 @@ pre-commit install
 | `npm run build:backend`  | Build backend only                   |
 | `npm run format`         | Format code with Prettier            |
 | `npm run format:check`   | Check formatting without modifying   |
+| `npm run db:migrate`     | Create/apply Prisma migrations       |
+| `npm run db:generate`    | Generate Prisma client               |
+| `npm run db:reset`       | Reset database and re-run migrations |
+| `npm run db:studio`      | Open Prisma Studio                   |
 
 ## Pre-commit Hooks
 

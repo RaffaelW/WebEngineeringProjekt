@@ -1,8 +1,8 @@
+/*
+separate file since linting should enabled for prisma config file and
+tsconfig.build.json can only include ts files under rootDir (./src)
+*/
 {
   "extends": "../tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src"]
+  "include": ["src/**/*.ts", "prisma.config.ts"]
 }

@@ -1,5 +1,16 @@
 {
   "ignorePaths": ["node_modules", "dist", ".angular", "package-lock.json"],
   "language": "en",
-  "words": ["finanzvisu", "Finanz", "Visu", "esbenp", "davidanson", "yoavbls", "dbaeumer"]
+  "words": [
+    "autoincrement",
+    "davidanson",
+    "dbaeumer",
+    "esbenp",
+    "Finanz",
+    "finanzvisu",
+    "fkey",
+    "pkey",
+    "Visu",
+    "yoavbls"
+  ]
 }

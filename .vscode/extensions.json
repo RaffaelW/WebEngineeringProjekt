@@ -5,6 +5,7 @@
     "davidanson.vscode-markdownlint",
     "yoavbls.pretty-ts-errors",
     "angular.ng-template",
-    "dbaeumer.vscode-eslint"
+    "dbaeumer.vscode-eslint",
+    "prisma.prisma"
   ]
 }
