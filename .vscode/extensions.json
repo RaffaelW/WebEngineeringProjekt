@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "streetsidesoftware.code-spell-checker",
+    "davidanson.vscode-markdownlint",
+    "yoavbls.pretty-ts-errors",
+    "angular.ng-template",
+    "dbaeumer.vscode-eslint"
+  ]
+}
