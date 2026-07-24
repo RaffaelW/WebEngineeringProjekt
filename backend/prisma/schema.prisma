@@ -10,9 +10,65 @@ datasource db {
   provider = "postgresql"
 }
 
-model Dummy {
-  id        String   @id @default(uuid())
-  name      String
-  balance   Decimal  @default(0) @db.Decimal(14, 2)
-  createdAt DateTime @default(now())
+enum TransactionType {
+  buy
+  sell
+
+  @@map("transaction_type")
+}
+
+model AppUser {
+  id           BigInt                 @id @default(autoincrement())
+  name         String                 @unique
+  hashPassword String
+  cookies      Cookie[]
+  transactions PortfolioTransaction[]
+
+  @@map("app-user")
+}
+
+model Cookie {
+  id        BigInt   @id @default(autoincrement())
+  appUserId BigInt   @map("app_user_id")
+  value     String   @unique
+  createdAt DateTime @map("created_at")
+  expiresAt DateTime @map("expires_at")
+  appUser   AppUser  @relation(fields: [appUserId], references: [id])
+
+  @@map("cookie")
+}
+
+model PortfolioTransaction {
+  id              BigInt          @id @default(autoincrement())
+  appUserId       BigInt          @map("app_user_id")
+  assetId         BigInt          @map("asset_id")
+  transactionType TransactionType @map("transaction_type")
+  time            DateTime
+  shares_amount   Int
+  appUser         AppUser         @relation(fields: [appUserId], references: [id])
+  asset           Asset           @relation(fields: [assetId], references: [id])
+
+  @@map("portfolio-transaction")
+}
+
+model Asset {
+  id           BigInt                 @id @default(autoincrement())
+  name         String                 @unique
+  transactions PortfolioTransaction[]
+  history      History[]
+
+  @@map("asset")
+}
+
+model History {
+  id      BigInt   @id @default(autoincrement())
+  time    DateTime @unique
+  assetId BigInt   @map("asset_id")
+  high    Float
+  low     Float
+  open    Float
+  close   Float
+  asset   Asset    @relation(fields: [assetId], references: [id])
+
+  @@map("history")
 }
