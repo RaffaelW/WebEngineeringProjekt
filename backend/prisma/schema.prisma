@@ -1,0 +1,18 @@
+// Prisma schema file
+// Docs: https://pris.ly/d/prisma-schema
+// Configuration (schema path, migrations, .env loading) lives in ../prisma.config.ts
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Dummy {
+  id        String   @id @default(uuid())
+  name      String
+  balance   Decimal  @default(0) @db.Decimal(14, 2)
+  createdAt DateTime @default(now())
+}
