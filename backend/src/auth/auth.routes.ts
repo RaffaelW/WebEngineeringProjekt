@@ -21,7 +21,7 @@ router.route("/register").post(validate(authSchema), async (req, res) => {
 
     const user = await registerUser(req.body.name, req.body.password);
 
-    const token = await generateAuthToken(Number(user.id));
+    const token = await generateAuthToken(user.id);
     res.cookie(authCookieName, token, { httpOnly: true, secure: false });
 
     res.status(201).json({ message: "User registered successfully" });
@@ -38,11 +38,7 @@ router.route("/register").post(validate(authSchema), async (req, res) => {
 router
   .route("/session")
   .get(requireAuth, (req, res) => {
-    const user = {
-      ...req.user!,
-      id: Number(req.user!.id),
-    };
-    res.status(200).json(user);
+    res.status(200).json(req.user!);
   })
   .post(validate(authSchema), async (req, res) => {
     const user = await verifyUser(req.body.name, req.body.password);
@@ -50,7 +46,7 @@ router
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const token = await generateAuthToken(Number(user.id));
+    const token = await generateAuthToken(user.id);
     res.cookie(authCookieName, token, { httpOnly: true, secure: false });
 
     res.status(200).json({ message: "Login successful" });
