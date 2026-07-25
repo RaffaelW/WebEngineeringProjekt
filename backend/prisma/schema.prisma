@@ -52,8 +52,10 @@ model PortfolioTransaction {
 }
 
 model Asset {
-  id           BigInt                 @id @default(autoincrement())
-  name         String                 @unique
+  id BigInt @id @default(autoincrement())
+  name         String
+  ticker       String
+  exchange     String
   transactions PortfolioTransaction[]
   history      History[]
 
