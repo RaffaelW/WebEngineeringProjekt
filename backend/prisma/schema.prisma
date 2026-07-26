@@ -52,7 +52,7 @@ model Asset {
 
 model History {
   id      Int      @id @default(autoincrement())
-  time    DateTime @unique
+  time    DateTime
   assetId Int      @map("asset_id")
   high    Float
   low     Float
@@ -60,5 +60,6 @@ model History {
   close   Float
   asset   Asset    @relation(fields: [assetId], references: [id])
 
+  @@unique([assetId, time])
   @@map("history")
 }
