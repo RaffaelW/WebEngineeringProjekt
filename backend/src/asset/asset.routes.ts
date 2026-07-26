@@ -1,9 +1,10 @@
 import { Router } from "express";
 import z from "zod";
 import { requireAuth } from "../auth/auth.middleware.js";
-import { AutoCompleteType, getAutoCompleteData, populateAssetTable } from "./asset.service.js";
+import { getAutoCompleteData, populateAssetTable } from "./asset.service.js";
 import { validateQuery } from "../middleware/validation.middleware.js";
 import { GateWayError } from "../lib/alpaca.js";
+import { Asset } from "@prisma/client";
 
 export const router = Router();
 
@@ -15,7 +16,7 @@ router
   .route("/autocomplete")
   .get(requireAuth, validateQuery(autoCompleteSchema), async (req, res) => {
     try {
-      const assets: AutoCompleteType[] = await getAutoCompleteData(req.query.name as string);
+      const assets: Asset[] = await getAutoCompleteData(req.query.name as string);
       res.status(200).json(assets);
     } catch {
       res.status(500).json({ message: "Internal server error" });
