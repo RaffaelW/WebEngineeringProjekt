@@ -1,5 +1,4 @@
-import type { History } from "@prisma/client";
-import { fetchAssets } from "../lib/alpaca.js";
+import { AlpacaAsset, fetchAssets } from "../lib/alpaca.js";
 import { prisma } from "../lib/prisma.js";
 
 export interface AutoCompleteType {
@@ -17,9 +16,8 @@ export async function getAutoCompleteData(name: string): Promise<AutoCompleteTyp
 }
 
 export async function populateAssetTable(): Promise<void> {
-  const assets = await fetchAssets();
-
-  const tradable = assets.filter((asset) => asset.tradable);
+  const assets: AlpacaAsset[] = await fetchAssets();
+  const tradable: AlpacaAsset[] = assets.filter((asset) => asset.tradable);
 
   await prisma.asset.createMany({
     data: tradable.map((asset) => ({
@@ -28,19 +26,5 @@ export async function populateAssetTable(): Promise<void> {
       exchange: asset.exchange,
     })),
     skipDuplicates: true,
-  });
-}
-
-export async function getHistoricalBars(
-  assetId: number,
-  start: Date,
-  end: Date,
-): Promise<History[]> {
-  return await prisma.history.findMany({
-    where: {
-      assetId,
-      time: { gte: start, lte: end },
-    },
-    orderBy: { time: "asc" },
   });
 }
