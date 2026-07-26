@@ -2,6 +2,7 @@
   "ignorePaths": ["node_modules", "dist", ".angular", "package-lock.json"],
   "language": "en",
   "words": [
+    "alpacahq",
     "apexcharts",
     "autoincrement",
     "davidanson",

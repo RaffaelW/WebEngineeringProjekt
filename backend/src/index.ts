@@ -1,6 +1,7 @@
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
+import { router as assetRouter } from "./asset/asset.routes.js";
 import { storeToken } from "./auth/auth.middleware.js";
 import { router as authRouter } from "./auth/auth.routes.js";
 
@@ -22,6 +23,7 @@ app.get("/api/health", (_req, res) => {
 app.use(storeToken);
 
 app.use("/api/auth", authRouter);
+app.use("/api/assets", assetRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
