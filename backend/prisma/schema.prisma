@@ -58,6 +58,7 @@ model History {
   low     Float
   open    Float
   close   Float
+  volume  Float
   asset   Asset    @relation(fields: [assetId], references: [id])
 
   @@unique([assetId, time])
