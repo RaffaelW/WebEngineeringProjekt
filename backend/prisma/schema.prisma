@@ -17,6 +17,16 @@ enum TransactionType {
   @@map("transaction_type")
 }
 
+enum TimeFrame {
+  min1 @map("1min")
+  h1   @map("1h")
+  d1   @map("1d")
+  w1   @map("1w")
+  mo1  @map("1mo")
+
+  @@map("time_frame")
+}
+
 model AppUser {
   id           Int                    @id @default(autoincrement())
   name         String                 @unique
@@ -46,6 +56,7 @@ model Asset {
   exchange     String
   transactions PortfolioTransaction[]
   history      History[]
+  coverage     Coverage[]
 
   @@map("asset")
 }
@@ -63,4 +74,17 @@ model History {
 
   @@unique([assetId, time])
   @@map("history")
+}
+
+model Coverage {
+  id        Int       @id @default(autoincrement())
+  assetId   Int       @map("asset_id")
+  timeframe TimeFrame
+  start     DateTime
+  end       DateTime
+  asset     Asset     @relation(fields: [assetId], references: [id])
+
+  @@unique([assetId, timeframe, start, end])
+  @@index([assetId, timeframe])
+  @@map("coverage")
 }
