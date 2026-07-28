@@ -1,7 +1,14 @@
 import { Router } from "express";
 import z from "zod";
 import { requireAuth } from "../auth/auth.middleware.js";
-import { TickerNotFoundError, TimeFrameKey, getHistory, timeFrames } from "./history.service.js";
+import {
+  RangeTooSmallError,
+  ResponseSizeError,
+  TickerNotFoundError,
+  TimeFrameKey,
+  getHistory,
+  timeFrames,
+} from "./history.service.js";
 import { validateQuery } from "../middleware/validation.middleware.js";
 import { DateError } from "../lib/date.js";
 import { GateWayError } from "../lib/alpaca.js";
@@ -27,6 +34,10 @@ router.route("/").get(requireAuth, validateQuery(historySchema), async (req, res
   } catch (error) {
     if (error instanceof TickerNotFoundError) {
       return res.status(404).json({ message: "Asset not found" });
+    }
+
+    if (error instanceof ResponseSizeError || error instanceof RangeTooSmallError) {
+      return res.status(400).json({ message: error.message });
     }
 
     if (error instanceof DateError) {
