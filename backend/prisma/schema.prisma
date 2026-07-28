@@ -52,7 +52,7 @@ model PortfolioTransaction {
 model Asset {
   id           Int                    @id @default(autoincrement())
   name         String
-  ticker       String
+  ticker       String                 @unique
   exchange     String
   transactions PortfolioTransaction[]
   history      History[]
