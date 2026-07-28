@@ -30,6 +30,19 @@ if (!keyId || !secret) {
 
 const alpaca: Alpaca = new Alpaca({ keyId, secret, paper: true });
 
+export async function fetchAssets(): Promise<AlpacaAsset[]> {
+  try {
+    return await alpaca.trading.assets.getV2Assets({
+      status: "active",
+      assetClass: "us_equity",
+    });
+  } catch (error: unknown) {
+    throw new GateWayError("Asset search failed for assets", {
+      cause: error,
+    });
+  }
+}
+
 export async function fetchTradingDays(start: Date, end: Date): Promise<Date[]> {
   try {
     const days = await alpaca.trading.calendar.legacyCalendar({ start, end });
