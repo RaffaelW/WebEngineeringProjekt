@@ -6,6 +6,16 @@ import dotenv from "dotenv";
 
 export type AlpacaAsset = trading.Assets;
 
+export type AssetHistory = {
+  ticker: string;
+  time: Date;
+  high: number;
+  low: number;
+  open: number;
+  close: number;
+  volume: number;
+};
+
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(dirname, "..", "..", "..", ".env") });
 
@@ -20,23 +30,26 @@ if (!keyId || !secret) {
 
 const alpaca: Alpaca = new Alpaca({ keyId, secret, paper: true });
 
-export async function fetchAssets(): Promise<AlpacaAsset[]> {
+export async function fetchTradingDays(start: Date, end: Date): Promise<Date[]> {
   try {
-    return await alpaca.trading.assets.getV2Assets({
-      status: "active",
-      assetClass: "us_equity",
-    });
+    const days = await alpaca.trading.calendar.legacyCalendar({ start, end });
+    return days.map((day) => day.date);
   } catch (error: unknown) {
-    throw new GateWayError("Asset search failed for assets", {
+    throw new GateWayError("Market calendar lookup failed", {
       cause: error,
     });
   }
 }
 
-export async function fetchAssetHistory(ticker: string, start: Date, end: Date): Promise<Bar[]> {
+export async function fetchAssetHistory(
+  ticker: string,
+  timeframe: values.TimeFrameString,
+  start: Date,
+  end: Date,
+): Promise<Bar[]> {
   try {
     return await alpaca.data.getStockBarsFor(ticker, {
-      timeframe: values.TimeFrame.Day,
+      timeframe: timeframe,
       start,
       end,
       adjustment: "all",
