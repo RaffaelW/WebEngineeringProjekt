@@ -28,6 +28,7 @@ router.route("/populate").post(requireAuth, async (_req, res) => {
     res.status(200).json({ message: "Asset table populated" });
   } catch (error: unknown) {
     if (error instanceof GateWayError) {
+      console.error("Failed to fetch assets from upstream", error);
       return res.status(502).json({ message: "Failed to fetch assets from upstream" });
     }
     res.status(500).json({ message: "Internal server error" });
