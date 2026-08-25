@@ -1,17 +1,10 @@
 import { Router } from "express";
 import z from "zod";
 import { requireAuth } from "../auth/auth.middleware.js";
-import {
-  RangeTooSmallError,
-  ResponseSizeError,
-  TickerNotFoundError,
-  TimeFrameKey,
-  getHistory,
-  timeFrames,
-} from "./history.service.js";
+import { RangeError, getHistory } from "./history.service.js";
 import { validateQuery } from "../middleware/validation.middleware.js";
-import { DateError } from "../lib/date.js";
-import { GateWayError } from "../lib/alpaca.js";
+import { GateWayError, TickerNotFoundError } from "../lib/alpaca.js";
+import { timeFrameKeys } from "../lib/timeframe.js";
 
 export const router = Router();
 
@@ -20,10 +13,10 @@ const historySchema = z.object({
     .string()
     .min(1)
     .max(10)
-    .transform((s) => s.toUpperCase()),
-  start: z.iso.date().transform((s) => new Date(s)),
-  end: z.iso.date().transform((s) => new Date(s)),
-  timeframe: z.enum(Object.keys(timeFrames) as [TimeFrameKey]),
+    .transform((s: string) => s.toUpperCase()),
+  start: z.iso.date().transform((s: string) => new Date(s)),
+  end: z.iso.date().transform((s: string) => new Date(s)),
+  timeframe: z.enum(timeFrameKeys),
 });
 
 router.route("/").get(requireAuth, validateQuery(historySchema), async (req, res) => {
@@ -33,18 +26,17 @@ router.route("/").get(requireAuth, validateQuery(historySchema), async (req, res
     res.status(200).json(bars);
   } catch (error) {
     if (error instanceof TickerNotFoundError) {
+      console.error("Asset not found", error);
       return res.status(404).json({ message: "Asset not found" });
     }
 
-    if (error instanceof ResponseSizeError || error instanceof RangeTooSmallError) {
-      return res.status(400).json({ message: error.message });
-    }
-
-    if (error instanceof DateError) {
+    if (error instanceof RangeError) {
+      console.error("Invalid range for timeframe", error);
       return res.status(400).json({ message: error.message });
     }
 
     if (error instanceof GateWayError) {
+      console.error("Failed to fetch historical data from upstream", error);
       return res.status(502).json({ message: "Failed to fetch historical data from upstream" });
     }
 

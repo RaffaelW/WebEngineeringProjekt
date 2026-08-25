@@ -6,6 +6,12 @@ import dotenv from "dotenv";
 
 export type AlpacaAsset = trading.Assets;
 
+export class TickerNotFoundError extends Error {
+  constructor(ticker: string) {
+    super(`Asset with ticker ${ticker} does not exist`);
+  }
+}
+
 export type AssetHistory = {
   ticker: string;
   time: Date;
@@ -54,19 +60,35 @@ export async function fetchTradingDays(start: Date, end: Date): Promise<Date[]> 
   }
 }
 
+/**
+ * The free data plan rejects SIP queries covering the last 15 minutes
+ */
+function clampToAvailable(end: Date): Date {
+  const sipDelayMs: number = 15 * 60 * 1000;
+  const cutoff: Date = new Date(Date.now() - sipDelayMs);
+  return end.getTime() > cutoff.getTime() ? cutoff : end;
+}
+
 export async function fetchAssetHistory(
   ticker: string,
   timeframe: values.TimeFrameString,
   start: Date,
   end: Date,
 ): Promise<Bar[]> {
+  const available: Date = clampToAvailable(end);
+  // the whole window sits inside the restricted tail, asking would be a start > end request
+  if (start.getTime() > available.getTime()) {
+    return [];
+  }
+
   try {
-    return await alpaca.data.getStockBarsFor(ticker, {
+    const result: Bar[] = await alpaca.data.getStockBarsFor(ticker, {
       timeframe: timeframe,
       start,
-      end,
+      end: available,
       adjustment: "all",
     });
+    return result;
   } catch (error: unknown) {
     throw new GateWayError(`Bar search failed for asset ${ticker}`, {
       cause: error,
