@@ -5,6 +5,7 @@ import { RangeError, getHistory } from "./history.service.js";
 import { validateQuery } from "../middleware/validation.middleware.js";
 import { GateWayError, TickerNotFoundError } from "../lib/alpaca.js";
 import { timeFrameKeys } from "../lib/timeframe.js";
+import { endOfDay, startOfDay } from "../lib/date.js";
 
 export const router = Router();
 
@@ -14,8 +15,8 @@ const historySchema = z.object({
     .min(1)
     .max(10)
     .transform((s: string) => s.toUpperCase()),
-  start: z.iso.date().transform((s: string) => new Date(s)),
-  end: z.iso.date().transform((s: string) => new Date(s)),
+  start: z.iso.date().transform((s: string) => startOfDay(new Date(s))),
+  end: z.iso.date().transform((s: string) => endOfDay(new Date(s))),
   timeframe: z.enum(timeFrameKeys),
 });
 

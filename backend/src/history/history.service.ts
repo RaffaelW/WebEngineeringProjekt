@@ -1,5 +1,10 @@
-import { History } from "@prisma/client";
-import { AssetHistory, TickerNotFoundError, fetchAssetHistory } from "../lib/alpaca.js";
+import { Asset, History } from "@prisma/client";
+import {
+  AssetHistory,
+  TickerNotFoundError,
+  clampToAvailable,
+  fetchAssetHistory,
+} from "../lib/alpaca.js";
 import { prisma } from "../lib/prisma.js";
 import { TimeFrameKey, TimeFrameSpec, timeFrames } from "../lib/timeframe.js";
 import { Bar } from "@alpacahq/alpaca-trade-api";
@@ -66,7 +71,7 @@ export async function getHistory(
   start: Date,
   end: Date,
 ): Promise<AssetHistory[]> {
-  const asset = await prisma.asset.findUnique({ where: { ticker } });
+  const asset: Asset | null = await prisma.asset.findUnique({ where: { ticker } });
   if (!asset) {
     throw new TickerNotFoundError(ticker);
   }
@@ -75,21 +80,41 @@ export async function getHistory(
 
   const spec: TimeFrameSpec = timeFrames[timeframe];
 
-  const covered: boolean = await checkCoverage(asset.id, spec.prisma, start, end);
+  /**
+   * A bar is only final once its whole period has finished, so the bar the current period is
+   * still building must never be cached, and everything before it can be.
+   *
+   * The boundary has to come from the fixed period grid rather like the full hours
+   */
+  const forming: number = Math.floor(clampToAvailable(new Date()).getTime() / spec.min) * spec.min;
 
-  if (!covered) {
-    const bars: Bar[] = await fetchAssetHistory(asset.ticker, spec.alpaca, start, end);
-    await cacheBars(asset.id, spec.prisma, bars);
-    return bars.map((bar: Bar) => barToAssetHistory(bar, asset.ticker));
-  } else {
-    const history: History[] = await prisma.history.findMany({
-      where: {
-        assetId: asset.id,
-        timeframe: spec.prisma,
-        time: { gte: start, lte: end },
-      },
-      orderBy: { time: "asc" },
-    });
-    return history.map((entry: History) => historyToAssetHistory(entry, asset.ticker));
+  const cacheEnd: Date = new Date(Math.min(end.getTime(), forming - 1));
+
+  const history: AssetHistory[] = [];
+
+  if (cacheEnd >= start) {
+    const covered: boolean = await checkCoverage(asset.id, spec.prisma, start, cacheEnd);
+
+    if (covered) {
+      const rows: History[] = await prisma.history.findMany({
+        where: { assetId: asset.id, timeframe: spec.prisma, time: { gte: start, lte: cacheEnd } },
+        orderBy: { time: "asc" },
+      });
+      history.push(...rows.map((row: History) => historyToAssetHistory(row, asset.ticker)));
+    } else {
+      const bars: Bar[] = await fetchAssetHistory(asset.ticker, spec.alpaca, start, cacheEnd);
+      await cacheBars(asset.id, spec.prisma, bars, start, cacheEnd);
+      history.push(...bars.map((bar: Bar) => barToAssetHistory(bar, asset.ticker)));
+    }
   }
+
+  // the bar which is still forming, fetched every time and never cached, it is not final yet.
+  // a window ending before it never gets here, cacheEnd already covers all of it.
+  // fetchAssetHistory drops the part of the window it is not allowed to ask for
+  if (end.getTime() >= forming) {
+    const bars: Bar[] = await fetchAssetHistory(asset.ticker, spec.alpaca, new Date(forming), end);
+    history.push(...bars.map((bar: Bar) => barToAssetHistory(bar, asset.ticker)));
+  }
+
+  return history;
 }

@@ -65,7 +65,7 @@ export async function fetchTradingDays(start: Date, end: Date): Promise<Date[]> 
 /**
  * The free data plan rejects SIP queries covering the last 15 minutes
  */
-function clampToAvailable(end: Date): Date {
+export function clampToAvailable(end: Date): Date {
   const sipDelayMs: number = 15 * 60 * 1000;
   const cutoff: Date = new Date(Date.now() - sipDelayMs);
   return end.getTime() > cutoff.getTime() ? cutoff : end;
