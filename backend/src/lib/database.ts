@@ -1,8 +1,31 @@
 import { Coverage, TimeFrame } from "@prisma/client";
 import { Bar } from "@alpacahq/alpaca-trade-api";
 import { prisma } from "./prisma.js";
-import { getOrderBook, Orderbook } from "../portfolio/portfolio.service.js";
-import { endOfDay } from "./date.js";
+import { clampToAvailable } from "./alpaca.js";
+
+export type Range = { start: Date; end: Date };
+
+const touchToleranceMs: number = 1;
+
+export function mergeRanges(ranges: readonly Range[]): Range[] {
+  const sorted: Range[] = [...ranges].sort(
+    (a, b) => a.start.getTime() - b.start.getTime() || a.end.getTime() - b.end.getTime(),
+  );
+
+  const merged: Range[] = [];
+
+  for (const { start, end } of sorted) {
+    const last: Range | undefined = merged.at(-1);
+
+    if (last && start.getTime() <= last.end.getTime() + touchToleranceMs) {
+      if (end.getTime() > last.end.getTime()) last.end = new Date(end);
+    } else {
+      merged.push({ start: new Date(start), end: new Date(end) });
+    }
+  }
+
+  return merged;
+}
 
 /**
  * Checks the coverage table for a range of bars of an asset, returns true if the range is fully covered.
@@ -26,21 +49,33 @@ export async function checkCoverage(
 }
 
 /**
- * Store bars as cache and record the range they span in the coverage table.
- * Coverage is only written once the rows are in, it never claim data which is not stored.
+ * Store bars as cache and record the window they were fetched for.
+ *
+ * Coverage records the REQUESTED window, not the span of the returned bars: weekends,
+ * holidays and the 15 minute delay make the bars a strict subset, so recording their span
+ * would miss on the next identical request and refetch forever. An empty result is cached
+ * too. requestedStart/requestedEnd must be the clamped values handed to fetchAssetHistory,
+ * so nothing is claimed which was not fetched.
  */
-export async function cacheBars(assetId: number, timeframe: TimeFrame, bars: Bar[]): Promise<void> {
-  //nothing to cache
-  if (bars.length === 0) {
+export async function cacheBars(
+  assetId: number,
+  timeframe: TimeFrame,
+  bars: Bar[],
+  requestedStart: Date,
+  requestedEnd: Date,
+): Promise<void> {
+  if (requestedEnd.getTime() > clampToAvailable(requestedEnd).getTime()) {
+    throw new Error(
+      `cacheBars got an unclamped window ending ${requestedEnd.toISOString()}, pass the end which was handed to fetchAssetHistory`,
+    );
+  }
+
+  if (requestedEnd < requestedStart) {
     return;
   }
-  const first: Bar = bars[0];
-  const last: Bar = bars.at(-1)!;
 
-  // a range already holding these bars means they are cached
-  const covered: boolean = await checkCoverage(assetId, timeframe, first.timestamp, last.timestamp);
+  const covered: boolean = await checkCoverage(assetId, timeframe, requestedStart, requestedEnd);
 
-  // already cached
   if (covered) {
     return;
   }
@@ -59,8 +94,9 @@ export async function cacheBars(assetId: number, timeframe: TimeFrame, bars: Bar
     skipDuplicates: true,
   });
 
-  await prisma.coverage.create({
-    data: { assetId, timeframe, start: first.timestamp, end: last.timestamp },
+  await prisma.coverage.createMany({
+    data: [{ assetId, timeframe, start: requestedStart, end: requestedEnd }],
+    skipDuplicates: true,
   });
 
   await unifyCoverageRanges(assetId, timeframe);
@@ -71,126 +107,38 @@ export async function cacheBars(assetId: number, timeframe: TimeFrame, bars: Bar
  * so a lookup only has to find a single row instead of stitching several together.
  */
 async function unifyCoverageRanges(assetId: number, timeframe: TimeFrame): Promise<void> {
-  const ranges: Coverage[] = await prisma.coverage.findMany({
+  const rows: Coverage[] = await prisma.coverage.findMany({
     where: { assetId, timeframe },
-    orderBy: { start: "asc" },
+    orderBy: [{ start: "asc" }],
   });
 
-  const seed: Coverage | undefined = ranges[0];
-  if (!seed) return;
+  if (rows.length === 0) return;
 
-  // seeding with a real row keeps the bounds non-null
-  let start: Date = seed.start;
-  let end: Date = seed.end;
+  const merged: Range[] = mergeRanges(rows);
 
-  for (const range of ranges) {
-    if (range.start < start) start = range.start;
-    if (range.end > end) end = range.end;
-  }
-
-  // if there is already one range which covers everything keep it and drop the rest
-  const spanning: Coverage | undefined = ranges.find(
-    (range: Coverage) =>
-      range.start.getTime() == start.getTime() && range.end.getTime() == end.getTime(),
+  const changedRows: Coverage[] = rows.filter(
+    (row: Coverage) =>
+      !merged.some(
+        (range: Range) =>
+          range.start.getTime() === row.start.getTime() &&
+          range.end.getTime() === row.end.getTime(),
+      ),
   );
 
-  if (spanning) {
-    await prisma.coverage.deleteMany({
-      where: { assetId, timeframe, id: { not: spanning.id } },
-    });
-    return;
-  }
+  if (changedRows.length === 0) return;
 
-  await prisma.coverage.deleteMany({ where: { assetId, timeframe } });
-  await prisma.coverage.create({ data: { assetId, timeframe, start, end } });
-}
-
-/**
- * Drop cached bars of assets no user holds a transaction on,
- * coverage goes with them so nothing claims data which is no longer stored.
- * A ticker is kept from its first buy until the day the last holder sold out,
- * or until now while anybody is still holding it.
- */
-export async function freeSpace(): Promise<void> {
-  /** What the cache still has to hold for a ticker, summed over every user. */
-  type Demand = {
-    start: Date;
-    lastOrder: Date;
-    sharesHeld: number;
-  };
-
-  const currentDate: Date = new Date();
-  const demands: Map<string, Demand> = new Map();
-
-  const users: { id: number }[] = await prisma.appUser.findMany({ select: { id: true } });
-
-  for (const user of users) {
-    const orderbook: Orderbook = await getOrderBook(user.id);
-
-    for (const order of orderbook) {
-      // widen to what an earlier user already needed of this ticker
-      const demand: Demand = demands.get(order.ticker) ?? {
-        start: order.time,
-        lastOrder: order.time,
-        sharesHeld: 0,
-      };
-
-      if (order.time < demand.start) demand.start = order.time;
-      if (order.time > demand.lastOrder) demand.lastOrder = order.time;
-      demand.sharesHeld +=
-        order.transactionType == "buy" ? order.shares_amount : -order.shares_amount;
-
-      demands.set(order.ticker, demand);
-    }
-  }
-
-  const assets: { id: number; ticker: string }[] = await prisma.asset.findMany({
-    select: { id: true, ticker: true },
-  });
-
-  for (const asset of assets) {
-    const demand: Demand | undefined = demands.get(asset.ticker);
-
-    // no user ever held this no need to cache it (reestablish consistent db layout)
-    if (demand == undefined) {
-      await prisma.coverage.deleteMany({ where: { assetId: asset.id } });
-      await prisma.history.deleteMany({ where: { assetId: asset.id } });
-      continue;
-    }
-
-    for (const timeframe of Object.keys(TimeFrame)) {
-      await unifyCoverageRanges(asset.id, timeframe as TimeFrame);
-    }
-
-    const keepFrom: Date = demand.start;
-    // while somebody holds the ticker now is the latest bar which can exist,
-    // once it is sold off the closing bar of the sell day is the last one needed
-    const keepUntil: Date = demand.sharesHeld > 0 ? currentDate : endOfDay(demand.lastOrder);
-
-    await prisma.coverage.deleteMany({
-      where: { assetId: asset.id, end: { lt: keepFrom } },
-    });
-
-    await prisma.coverage.updateMany({
-      where: { assetId: asset.id, start: { lt: keepFrom } },
-      data: { start: keepFrom },
-    });
-
-    await prisma.history.deleteMany({
-      where: { assetId: asset.id, time: { lt: keepFrom } },
-    });
-
-    await prisma.coverage.deleteMany({
-      where: { assetId: asset.id, start: { gt: keepUntil } },
-    });
-
-    await prisma.coverage.updateMany({
-      where: { assetId: asset.id, end: { gt: keepUntil } },
-      data: { end: keepUntil },
-    });
-
-    await prisma.history.deleteMany({
-      where: { assetId: asset.id, time: { gt: keepUntil } },
-    });
-  }
+  await prisma.$transaction([
+    prisma.coverage.deleteMany({
+      where: { id: { in: changedRows.map((row: Coverage) => row.id) } },
+    }),
+    prisma.coverage.createMany({
+      data: merged.map((range: Range) => ({
+        assetId,
+        timeframe,
+        start: range.start,
+        end: range.end,
+      })),
+      skipDuplicates: true,
+    }),
+  ]);
 }
