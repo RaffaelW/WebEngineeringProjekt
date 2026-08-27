@@ -30,6 +30,8 @@ const secret: string | undefined = process.env.API_KEY_SECRET;
 
 export class GateWayError extends Error {}
 
+export class NoMarketDataError extends Error {}
+
 if (!keyId || !secret) {
   throw new Error("API_KEY and API_KEY_SECRET are not set");
 }
@@ -94,4 +96,26 @@ export async function fetchAssetHistory(
       cause: error,
     });
   }
+}
+
+/**
+ * Returns the last bar for a given ticker at or before the given time, looking back up to an hour
+ * if time is during market close the last bar of the previous session is returned
+ */
+export async function getApproxBarAt(ticker: string, time: Date): Promise<Bar> {
+  const LOOK_BACK_MS: number = 60 * 60 * 1000;
+  const bars: Bar[] = await fetchAssetHistory(
+    ticker,
+    values.TimeFrame.Minute,
+    new Date(time.getTime() - LOOK_BACK_MS),
+    time,
+  );
+
+  const last: Bar | undefined = bars.at(-1);
+  if (!last) {
+    throw new NoMarketDataError(
+      `No market data for ${ticker} in the hour before ${time.toISOString()}, the market was closed, the session had not opened yet, or the timestamp is within the last 15 minutes`,
+    );
+  }
+  return last;
 }
