@@ -20,31 +20,36 @@ export const timeFrames: Record<TimeFrameKey, TimeFrameSpec> = {
     alpaca: values.TimeFrame.Minute,
     prisma: TimeFrame.min1,
     min: msPerMinute,
-    max: 7 * msPerDay, // 1 minute up to 7 days
+    // "10 days ago until today", 9 trading days once it spans two weekends, 8640 bars
+    max: 11 * msPerDay,
   },
   "1h": {
     alpaca: values.TimeFrame.Hour,
     prisma: TimeFrame.h1,
     min: msPerHour,
-    max: 30 * msPerDay, // 1 hour up to 30 days
+    // "2 years ago until today", 505 trading days, 8080 bars
+    max: 732 * msPerDay,
   },
   "1d": {
     alpaca: values.TimeFrame.Day,
     prisma: TimeFrame.d1,
     min: msPerDay,
-    max: 3 * 365 * msPerDay, // 1 day up to 3 years
+    // every daily bar since 2016 is about 2700
+    max: Infinity,
   },
   "1w": {
     alpaca: values.TimeFrame.Week,
     prisma: TimeFrame.w1,
     min: 7 * msPerDay,
-    max: Infinity, // 1 week up to unlimited
+    // every weekly bar since 2016 is about 560
+    max: Infinity,
   },
   "1mo": {
     alpaca: values.TimeFrame.Month,
     prisma: TimeFrame.mo1,
     min: 28 * msPerDay,
-    max: Infinity, // 4 weeks up to unlimited
+    // every monthly bar since 2016 is about 130
+    max: Infinity,
   },
 };
 
