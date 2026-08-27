@@ -32,3 +32,8 @@ yarn-error.log
 # Environment
 .env
 .env.local
+
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+pixi.*
