@@ -12,9 +12,14 @@ export type Order = {
 export type Orderbook = Order[];
 
 /**
- * return every order of the user in ascending order
+ * return every order of the user in ascending order, optionally limited to a time range,
+ * by default from the unix epoch up to now
  */
-export async function getOrderBook(userId: number): Promise<Orderbook> {
+export async function getOrderBook(
+  userId: number,
+  start: Date = new Date(0),
+  end: Date = new Date(),
+): Promise<Orderbook> {
   type transactionType = {
     transactionType: TransactionType;
     time: Date;
@@ -26,7 +31,7 @@ export async function getOrderBook(userId: number): Promise<Orderbook> {
   };
 
   const transactions: transactionType[] = await prisma.portfolioTransaction.findMany({
-    where: { appUserId: userId },
+    where: { appUserId: userId, time: { gte: start, lte: end } },
     select: {
       transactionType: true,
       time: true,
