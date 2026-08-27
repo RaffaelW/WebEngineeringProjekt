@@ -1,8 +1,13 @@
 import { TransactionType } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
-import { cacheBars, freeSpace } from "../lib/database.js";
+import { cacheBars } from "../lib/database.js";
 import { isTradeDay, startOfDay } from "../lib/date.js";
-import { getApproxBarAt, fetchAssetHistory, TickerNotFoundError } from "../lib/alpaca.js";
+import {
+  getApproxBarAt,
+  clampToAvailable,
+  fetchAssetHistory,
+  TickerNotFoundError,
+} from "../lib/alpaca.js";
 import { TimeFrameSpec, timeFrames } from "../lib/timeframe.js";
 import { Bar } from "@alpacahq/alpaca-trade-api";
 
@@ -77,11 +82,14 @@ export async function processOrder(order: transactionOrder, userId: number): Pro
   }
   // one spec so the bars fetched and the coverage written can never disagree
   const daily: TimeFrameSpec = timeFrames["1d"];
-  const bars: Bar[] = await fetchAssetHistory(order.ticker, daily.alpaca, order.time, new Date());
+  // from the start of the order day, the daily bar of that day is stamped before the
+  // order itself. clamp once, so the window fetched is the window recorded as cached
+  const fetchStart: Date = startOfDay(order.time);
+  const clampedEnd: Date = clampToAvailable(new Date());
+  const bars: Bar[] = await fetchAssetHistory(order.ticker, daily.alpaca, fetchStart, clampedEnd);
 
   // save data with timeframe 1day as cache
-  await cacheBars(asset.id, daily.prisma, bars);
-  await freeSpace();
+  await cacheBars(asset.id, daily.prisma, bars, fetchStart, clampedEnd);
 }
 
 function barMidpoint(bar: Bar): number {
