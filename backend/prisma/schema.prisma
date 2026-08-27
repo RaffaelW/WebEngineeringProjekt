@@ -62,17 +62,19 @@ model Asset {
 }
 
 model History {
-  id      Int      @id @default(autoincrement())
-  time    DateTime
-  assetId Int      @map("asset_id")
-  high    Float
-  low     Float
-  open    Float
-  close   Float
-  volume  Float
-  asset   Asset    @relation(fields: [assetId], references: [id])
+  id        Int       @id @default(autoincrement())
+  time      DateTime
+  assetId   Int       @map("asset_id")
+  timeframe TimeFrame
+  high      Float
+  low       Float
+  open      Float
+  close     Float
+  volume    Float
+  asset     Asset     @relation(fields: [assetId], references: [id])
 
-  @@unique([assetId, time])
+  // the timeframe is part of the identity, a 1d and a 1min bar can share a timestamp
+  @@unique([assetId, timeframe, time])
   @@map("history")
 }
 

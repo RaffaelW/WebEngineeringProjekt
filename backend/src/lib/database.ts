@@ -48,6 +48,7 @@ export async function cacheBars(assetId: number, timeframe: TimeFrame, bars: Bar
   await prisma.history.createMany({
     data: bars.map((bar: Bar) => ({
       assetId,
+      timeframe,
       time: bar.timestamp,
       high: bar.high,
       low: bar.low,
