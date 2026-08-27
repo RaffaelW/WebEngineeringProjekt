@@ -1,6 +1,8 @@
 import { Coverage, TimeFrame } from "@prisma/client";
 import { Bar } from "@alpacahq/alpaca-trade-api";
 import { prisma } from "./prisma.js";
+import { getOrderBook, Orderbook } from "../portfolio/portfolio.service.js";
+import { endOfDay } from "./date.js";
 
 /**
  * Checks the coverage table for a range of bars of an asset, returns true if the range is fully covered.
@@ -100,4 +102,94 @@ async function unifyCoverageRanges(assetId: number, timeframe: TimeFrame): Promi
 
   await prisma.coverage.deleteMany({ where: { assetId, timeframe } });
   await prisma.coverage.create({ data: { assetId, timeframe, start, end } });
+}
+
+/**
+ * Drop cached bars of assets no user holds a transaction on,
+ * coverage goes with them so nothing claims data which is no longer stored.
+ * A ticker is kept from its first buy until the day the last holder sold out,
+ * or until now while anybody is still holding it.
+ */
+export async function freeSpace(): Promise<void> {
+  /** What the cache still has to hold for a ticker, summed over every user. */
+  type Demand = {
+    start: Date;
+    lastOrder: Date;
+    sharesHeld: number;
+  };
+
+  const currentDate: Date = new Date();
+  const demands: Map<string, Demand> = new Map();
+
+  const users: { id: number }[] = await prisma.appUser.findMany({ select: { id: true } });
+
+  for (const user of users) {
+    const orderbook: Orderbook = await getOrderBook(user.id);
+
+    for (const order of orderbook) {
+      // widen to what an earlier user already needed of this ticker
+      const demand: Demand = demands.get(order.ticker) ?? {
+        start: order.time,
+        lastOrder: order.time,
+        sharesHeld: 0,
+      };
+
+      if (order.time < demand.start) demand.start = order.time;
+      if (order.time > demand.lastOrder) demand.lastOrder = order.time;
+      demand.sharesHeld +=
+        order.transactionType == "buy" ? order.shares_amount : -order.shares_amount;
+
+      demands.set(order.ticker, demand);
+    }
+  }
+
+  const assets: { id: number; ticker: string }[] = await prisma.asset.findMany({
+    select: { id: true, ticker: true },
+  });
+
+  for (const asset of assets) {
+    const demand: Demand | undefined = demands.get(asset.ticker);
+
+    // no user ever held this no need to cache it (reestablish consistent db layout)
+    if (demand == undefined) {
+      await prisma.coverage.deleteMany({ where: { assetId: asset.id } });
+      await prisma.history.deleteMany({ where: { assetId: asset.id } });
+      continue;
+    }
+
+    for (const timeframe of Object.keys(TimeFrame)) {
+      await unifyCoverageRanges(asset.id, timeframe as TimeFrame);
+    }
+
+    const keepFrom: Date = demand.start;
+    // while somebody holds the ticker now is the latest bar which can exist,
+    // once it is sold off the closing bar of the sell day is the last one needed
+    const keepUntil: Date = demand.sharesHeld > 0 ? currentDate : endOfDay(demand.lastOrder);
+
+    await prisma.coverage.deleteMany({
+      where: { assetId: asset.id, end: { lt: keepFrom } },
+    });
+
+    await prisma.coverage.updateMany({
+      where: { assetId: asset.id, start: { lt: keepFrom } },
+      data: { start: keepFrom },
+    });
+
+    await prisma.history.deleteMany({
+      where: { assetId: asset.id, time: { lt: keepFrom } },
+    });
+
+    await prisma.coverage.deleteMany({
+      where: { assetId: asset.id, start: { gt: keepUntil } },
+    });
+
+    await prisma.coverage.updateMany({
+      where: { assetId: asset.id, end: { gt: keepUntil } },
+      data: { end: keepUntil },
+    });
+
+    await prisma.history.deleteMany({
+      where: { assetId: asset.id, time: { gt: keepUntil } },
+    });
+  }
 }
