@@ -4,6 +4,7 @@ import {
   calculateStats,
   getLatestValidEnd,
   getOrderBook,
+  getShares,
   getValidStart,
   HoldingError,
   NotATradeDayError,
@@ -81,6 +82,11 @@ const statsSchema = z
     path: ["start"],
   });
 
+// absent means every ticker ever traded, held or already sold off
+const holdingsSchema = z.object({
+  status: z.enum(["active", "inactive"]).optional(),
+});
+
 /**
  * Returns every transaction every made in ascending order of one user,
  * optionally limited to the given range, by default the whole orderbook
@@ -90,6 +96,45 @@ router.route("/orderbook").get(requireAuth, validateQuery(orderbookSchema), asyn
 
   const orderbook: Orderbook = await getOrderBook(req.user!.id, start, end);
   res.status(200).json(orderbook);
+});
+
+/**
+ * Returns the tickers the user holds, active are the open positions, inactive the ones
+ * already sold off completely, without a status every ticker ever traded is returned
+ */
+router.route("/holdings").get(requireAuth, validateQuery(holdingsSchema), async (req, res) => {
+  try {
+    const { status } = req.query as unknown as z.infer<typeof holdingsSchema>;
+
+    // every order made in ascending order
+    const orderbook: Orderbook = await getOrderBook(req.user!.id);
+    // net shares per ticker, no market data is needed to know what is still held
+    const shares: Map<string, number> = getShares(orderbook);
+
+    const tickers: string[] = [...shares.entries()]
+      .filter(([, held]: [string, number]) => {
+        if (status === "active") {
+          return held > 0;
+        }
+
+        if (status === "inactive") {
+          return held === 0;
+        }
+
+        return true;
+      })
+      .map(([ticker]: [string, number]) => ticker);
+
+    res.status(200).json(tickers);
+  } catch (error) {
+    // an orderbook that sells more than it holds
+    if (error instanceof HoldingError) {
+      return res.status(400).json({ message: error.message });
+    }
+
+    console.error("Failed to load holdings", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 /**

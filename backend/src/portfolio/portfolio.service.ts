@@ -181,6 +181,34 @@ export async function getHolding(
 }
 
 /**
+ * net shares per ticker, replayed from the orderbook without pricing anything
+ *
+ * every ticker ever traded is present, a fully sold off position stays with zero shares
+ */
+export function getShares(orderbook: Orderbook): Map<string, number> {
+  const shares: Map<string, number> = new Map();
+
+  for (const order of orderbook) {
+    const held: number = shares.get(order.ticker) ?? 0;
+
+    if (order.transactionType === TransactionType.buy) {
+      shares.set(order.ticker, held + order.shares_amount);
+      continue;
+    }
+
+    if (order.shares_amount > held) {
+      throw new HoldingError(
+        `Cannot sell ${order.shares_amount} shares of ${order.ticker}, only ${held} held`,
+      );
+    }
+
+    shares.set(order.ticker, held - order.shares_amount);
+  }
+
+  return shares;
+}
+
+/**
  * return every order of the user in ascending order, optionally limited to a time range,
  * by default from the unix epoch up to now
  */
