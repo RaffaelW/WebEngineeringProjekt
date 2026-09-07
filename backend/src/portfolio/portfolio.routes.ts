@@ -4,9 +4,10 @@ import {
   calculateStats,
   getLatestValidEnd,
   getOrderBook,
-  getShares,
+  getStocksByStatus,
   getValidStart,
   HoldingError,
+  HoldingStatus,
   NotATradeDayError,
   Orderbook,
   processOrder,
@@ -84,7 +85,7 @@ const statsSchema = z
 
 // absent means every ticker ever traded, held or already sold off
 const holdingsSchema = z.object({
-  status: z.enum(["active", "inactive"]).optional(),
+  status: z.enum(["active", "inactive"] satisfies readonly HoldingStatus[]).optional(),
 });
 
 /**
@@ -108,22 +109,7 @@ router.route("/holdings").get(requireAuth, validateQuery(holdingsSchema), async 
 
     // every order made in ascending order
     const orderbook: Orderbook = await getOrderBook(req.user!.id);
-    // net shares per ticker, no market data is needed to know what is still held
-    const shares: Map<string, number> = getShares(orderbook);
-
-    const tickers: string[] = [...shares.entries()]
-      .filter(([, held]: [string, number]) => {
-        if (status === "active") {
-          return held > 0;
-        }
-
-        if (status === "inactive") {
-          return held === 0;
-        }
-
-        return true;
-      })
-      .map(([ticker]: [string, number]) => ticker);
+    const tickers: string[] = getStocksByStatus(orderbook, status);
 
     res.status(200).json(tickers);
   } catch (error) {

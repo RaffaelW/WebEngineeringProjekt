@@ -180,12 +180,9 @@ export async function getHolding(
   return holdings;
 }
 
-/**
- * net shares per ticker, replayed from the orderbook without pricing anything
- *
- * every ticker ever traded is present, a fully sold off position stays with zero shares
- */
-export function getShares(orderbook: Orderbook): Map<string, number> {
+export type HoldingStatus = "active" | "inactive";
+
+export function getStocksByStatus(orderbook: Orderbook, status?: HoldingStatus): string[] {
   const shares: Map<string, number> = new Map();
 
   for (const order of orderbook) {
@@ -205,7 +202,19 @@ export function getShares(orderbook: Orderbook): Map<string, number> {
     shares.set(order.ticker, held - order.shares_amount);
   }
 
-  return shares;
+  return [...shares.entries()]
+    .filter(([, held]: [string, number]) => {
+      if (status === "active") {
+        return held > 0;
+      }
+
+      if (status === "inactive") {
+        return held === 0;
+      }
+
+      return true;
+    })
+    .map(([ticker]: [string, number]) => ticker);
 }
 
 /**
