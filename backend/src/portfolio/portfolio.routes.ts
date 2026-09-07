@@ -1,11 +1,22 @@
 import { Router } from "express";
 import z from "zod";
-import { getOrderBook, NotATradeDayError, Orderbook, processOrder } from "./portfolio.service.js";
+import {
+  calculateStats,
+  getLatestValidEnd,
+  getOrderBook,
+  getValidStart,
+  HoldingError,
+  NotATradeDayError,
+  Orderbook,
+  processOrder,
+  setWantedTickers,
+  Stats,
+} from "./portfolio.service.js";
 import { TransactionType } from "@prisma/client";
 import { requireAuth } from "../auth/auth.middleware.js";
 import { validate, validateQuery } from "../middleware/validation.middleware.js";
-import { endOfDay, startOfDay } from "../lib/date.js";
-import { GateWayError, TickerNotFoundError } from "../lib/alpaca.js";
+import { DateError, endOfDay, startOfDay } from "../lib/date.js";
+import { GateWayError, NoMarketDataError, TickerNotFoundError } from "../lib/alpaca.js";
 
 export const router = Router();
 
@@ -36,6 +47,40 @@ const orderbookSchema = z
     path: ["start"],
   });
 
+// comma separated list, absent means every ticker in the orderbook
+const statsSchema = z
+  .object({
+    tickers: z
+      .string()
+      .optional()
+      .transform((s: string | undefined) => {
+        if (!s) {
+          return undefined;
+        }
+
+        return s
+          .split(",")
+          .map((ticker: string) => ticker.trim().toUpperCase())
+          .filter(Boolean);
+      }),
+    // if not set the latest trading day is used, priced live while the market is open
+    // and off that session's closing bar otherwise
+    end: z.iso
+      .date()
+      .optional()
+      .transform((s: string | undefined) => (s ? new Date(s) : undefined)),
+    // must be a trading day, absent means the performance is measured from the very first order
+    start: z.iso
+      .date()
+      .optional()
+      .transform((s: string | undefined) => (s ? new Date(s) : undefined)),
+  })
+  // a reversed window would price the opening position after the day it is valued on
+  .refine((range) => !range.start || !range.end || range.start <= range.end, {
+    message: "start must not be after end",
+    path: ["start"],
+  });
+
 /**
  * Returns every transaction every made in ascending order of one user,
  * optionally limited to the given range, by default the whole orderbook
@@ -45,6 +90,50 @@ router.route("/orderbook").get(requireAuth, validateQuery(orderbookSchema), asyn
 
   const orderbook: Orderbook = await getOrderBook(req.user!.id, start, end);
   res.status(200).json(orderbook);
+});
+
+/**
+ * Returns a number of statistics about a set of tickers if not set return the statistics of every ticker ever held
+ * if end is set only transaction which happened before that will be used to calculate the statistic
+ * if start is set the performance is measured from there, a position already held then counts with
+ * its market price at start instead of what it once was bought for
+ */
+router.route("/stats").get(requireAuth, validateQuery(statsSchema), async (req, res) => {
+  try {
+    const { tickers, end, start } = req.query as unknown as z.infer<typeof statsSchema>;
+
+    // every order made in ascending order
+    const orderbook: Orderbook = await getOrderBook(req.user!.id);
+
+    // if no tickers are queried wanted is set to every ticker ever held
+    const wanted: string[] = setWantedTickers(orderbook, tickers);
+
+    // if end is valid trading return end else return the previous trading day
+    const windowEnd: Date = await getLatestValidEnd(end);
+    // without a start the window starts at the very first order
+    const windowStart: Date = await getValidStart(start);
+
+    const stats: Stats[] = await calculateStats(orderbook, wanted, windowEnd, windowStart);
+
+    res.status(200).json(stats);
+  } catch (error) {
+    // a non tradeable end, an end without market data, or an orderbook that sells more than it holds
+    if (
+      error instanceof DateError ||
+      error instanceof NoMarketDataError ||
+      error instanceof HoldingError
+    ) {
+      return res.status(400).json({ message: error.message });
+    }
+
+    if (error instanceof GateWayError) {
+      console.error("Failed to fetch market data from upstream", error);
+      return res.status(502).json({ message: "Failed to fetch market data from upstream" });
+    }
+
+    console.error("Failed to calculate portfolio stats", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 router.route("/transaction").post(requireAuth, validate(portfolioSchema), async (req, res) => {

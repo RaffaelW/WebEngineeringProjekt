@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import { Alpaca, Bar, trading, values } from "@alpacahq/alpaca-trade-api";
 import dotenv from "dotenv";
 
+import { endOfDay, startOfDay } from "./date.js";
+
 export type AlpacaAsset = trading.Assets;
 
 export class TickerNotFoundError extends Error {
@@ -54,9 +56,35 @@ export async function fetchAssets(): Promise<AlpacaAsset[]> {
 export async function fetchTradingDays(start: Date, end: Date): Promise<Date[]> {
   try {
     const days = await alpaca.trading.calendar.legacyCalendar({ start, end });
-    return days.map((day) => day.date);
+
+    // ascending, callers rely on the last entry being the most recent trading day
+    return days
+      .map((day: trading.LegacyCalendarDay) => day.date)
+      .sort((a: Date, b: Date) => a.getTime() - b.getTime());
   } catch (error: unknown) {
     throw new GateWayError("Market calendar lookup failed", {
+      cause: error,
+    });
+  }
+}
+
+export type MarketClock = {
+  isOpen: boolean;
+  timestamp: Date;
+  nextOpen: Date;
+};
+
+/**
+ * Current state of the US market. The upstream clock only reports on right now,
+ * it cannot answer for a past moment.
+ */
+export async function fetchMarketClock(): Promise<MarketClock> {
+  try {
+    const clock: trading.LegacyClock = await alpaca.trading.clock.legacyClock();
+
+    return { isOpen: clock.isOpen, timestamp: clock.timestamp, nextOpen: clock.nextOpen };
+  } catch (error: unknown) {
+    throw new GateWayError("Market clock lookup failed", {
       cause: error,
     });
   }
@@ -118,4 +146,54 @@ export async function getApproxBarAt(ticker: string, time: Date): Promise<Bar> {
     );
   }
   return last;
+}
+
+export async function fetchLivePrice(ticker: string): Promise<number> {
+  try {
+    const result: number | undefined = await alpaca.data.getLatestPrice(ticker);
+    if (result === undefined) {
+      throw new GateWayError(`No live price for ${ticker}`);
+    }
+    return result;
+  } catch (error: unknown) {
+    throw new GateWayError(`Live price lookup failed for asset ${ticker}`, {
+      cause: error,
+    });
+  }
+}
+
+/**
+ * Last minute bar the asset traded on the given day
+ */
+export async function fetchLastBarOfDay(ticker: string, day: Date): Promise<Bar> {
+  const bars: Bar[] = await fetchAssetHistory(
+    ticker,
+    values.TimeFrame.Minute,
+    startOfDay(day),
+    endOfDay(day),
+  );
+
+  const last: Bar | undefined = bars.at(-1);
+  if (!last) {
+    throw new NoMarketDataError(`No market data for ${ticker} on ${startOfDay(day).toISOString()}`);
+  }
+  return last;
+}
+
+/**
+ * First minute bar the asset traded on the given day
+ */
+export async function fetchFirstBarOfDay(ticker: string, day: Date): Promise<Bar> {
+  const bars: Bar[] = await fetchAssetHistory(
+    ticker,
+    values.TimeFrame.Minute,
+    startOfDay(day),
+    endOfDay(day),
+  );
+
+  const first: Bar | undefined = bars.at(0);
+  if (!first) {
+    throw new NoMarketDataError(`No market data for ${ticker} on ${startOfDay(day).toISOString()}`);
+  }
+  return first;
 }
