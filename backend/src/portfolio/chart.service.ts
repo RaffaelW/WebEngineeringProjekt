@@ -19,19 +19,23 @@ function alignToTimeline(timeline: Date[], bars: AssetHistory[]): number[] {
     byTime.set(bar.time.getTime(), bar);
   }
 
-  // the first open, so a leading gap is priced at the earliest price seen instead of dropped
-  let previous: number = bars.at(0)?.open ?? 0; //critical: if no bars, the ticker was never traded in the window, so it is priced at nothing and the sum drops it
+  // before the first bar there is no close to carry yet, so the earliest open stands in
+  // critical: with no bars at all the ticker never traded here and every stamp prices at nothing
+  let lastKnownPrice: number = bars.at(0)?.open ?? 0;
 
-  return timeline.map((time: Date) => {
+  const prices: number[] = [];
+  for (const time of timeline) {
     const bar: AssetHistory | undefined = byTime.get(time.getTime());
 
-    // no bar means nothing traded, the price stood still at the last close
+    // a stamp this ticker did not trade on keeps the price it last closed at
     if (bar !== undefined) {
-      previous = bar.close;
+      lastKnownPrice = bar.close;
     }
 
-    return previous;
-  });
+    prices.push(lastKnownPrice);
+  }
+
+  return prices;
 }
 
 /**
@@ -70,7 +74,7 @@ export async function calculatePortfolioChart(
   // shares and cost basis are facts of the whole history, the window only bounds the prices
   const holdings: Map<string, Holding> = await getHolding(orderbook);
 
-  // a position already sold off weighs nothing, charting it would only cost a history fetch
+  // a position already sold off weighs nothing
   const held: Map<string, Holding> = new Map(
     [...holdings].filter(([, holding]: [string, Holding]) => holding.shares > 0),
   );
