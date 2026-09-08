@@ -16,6 +16,11 @@ export async function getAutoCompleteData(name: string): Promise<AutoCompleteTyp
 }
 
 export async function populateAssetTable(): Promise<void> {
+  const existing: number = await prisma.asset.count();
+  if (existing > 0) {
+    return;
+  }
+
   const assets: AlpacaAsset[] = await fetchAssets();
   const tradable: AlpacaAsset[] = assets.filter((asset) => asset.tradable);
 
