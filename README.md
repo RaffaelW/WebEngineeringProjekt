@@ -45,6 +45,10 @@ PostgreSQL 17 (Docker) with Prisma as ORM and migration tool.
 | `npm run db:generate`    | Generate Prisma client               |
 | `npm run db:reset`       | Reset database and re-run migrations |
 | `npm run db:studio`      | Open Prisma Studio                   |
+| `npm run ng`             | Run the Angular CLI in `frontend/`   |
+
+Arguments for the Angular CLI have to be passed after `--`, e.g.
+`npm run ng -- generate component dashboard`.
 
 ## Pre-commit Hooks
 
