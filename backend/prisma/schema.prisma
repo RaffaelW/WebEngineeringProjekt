@@ -17,6 +17,16 @@ enum TransactionType {
   @@map("transaction_type")
 }
 
+enum TimeFrame {
+  min1 @map("1min")
+  h1   @map("1h")
+  d1   @map("1d")
+  w1   @map("1w")
+  mo1  @map("1mo")
+
+  @@map("time_frame")
+}
+
 model AppUser {
   id           Int                    @id @default(autoincrement())
   name         String                 @unique
@@ -41,22 +51,42 @@ model PortfolioTransaction {
 
 model Asset {
   id           Int                    @id @default(autoincrement())
-  name         String                 @unique
+  name         String
+  ticker       String                 @unique
+  exchange     String
   transactions PortfolioTransaction[]
   history      History[]
+  coverage     Coverage[]
 
   @@map("asset")
 }
 
 model History {
-  id      Int      @id @default(autoincrement())
-  time    DateTime @unique
-  assetId Int      @map("asset_id")
-  high    Float
-  low     Float
-  open    Float
-  close   Float
-  asset   Asset    @relation(fields: [assetId], references: [id])
+  id        Int       @id @default(autoincrement())
+  time      DateTime
+  assetId   Int       @map("asset_id")
+  timeframe TimeFrame
+  high      Float
+  low       Float
+  open      Float
+  close     Float
+  volume    Float
+  asset     Asset     @relation(fields: [assetId], references: [id])
 
+  // the timeframe is part of the identity, a 1d and a 1min bar can share a timestamp
+  @@unique([assetId, timeframe, time])
   @@map("history")
+}
+
+model Coverage {
+  id        Int       @id @default(autoincrement())
+  assetId   Int       @map("asset_id")
+  timeframe TimeFrame
+  start     DateTime
+  end       DateTime
+  asset     Asset     @relation(fields: [assetId], references: [id])
+
+  @@unique([assetId, timeframe, start, end])
+  @@index([assetId, timeframe])
+  @@map("coverage")
 }
