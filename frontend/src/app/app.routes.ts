@@ -19,5 +19,10 @@ export const routes: Routes = [
     loadComponent: () =>
       import("./pages/leaderboard-page/leaderboard-page").then((m) => m.LeaderboardPage),
   },
+  {
+    path: "settings",
+    title: "Settings – FinanzVisu",
+    loadComponent: () => import("./pages/settings-page/settings-page").then((m) => m.SettingsPage),
+  },
   { path: "**", redirectTo: "dashboard" },
 ];
