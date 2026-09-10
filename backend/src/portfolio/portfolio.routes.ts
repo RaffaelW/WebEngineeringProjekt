@@ -31,6 +31,7 @@ const portfolioSchema = z.object({
   shares_amount: z.int().positive(),
   time: z.iso.datetime().transform((s) => new Date(s)),
 });
+type PortfolioSchema = z.infer<typeof portfolioSchema>;
 
 const orderbookSchema = z
   .object({
@@ -47,6 +48,7 @@ const orderbookSchema = z
     message: "start must not be after end",
     path: ["start"],
   });
+type OrderbookQuery = z.infer<typeof orderbookSchema>;
 
 // comma separated list, absent means every ticker in the orderbook
 const statsSchema = z
@@ -81,11 +83,13 @@ const statsSchema = z
     message: "start must not be after end",
     path: ["start"],
   });
+type StatsQuery = z.infer<typeof statsSchema>;
 
 // absent means every ticker ever traded, held or already sold off
 const holdingsSchema = z.object({
   status: z.enum(["active", "inactive"] satisfies readonly HoldingStatus[]).optional(),
 });
+type HoldingsQuery = z.infer<typeof holdingsSchema>;
 
 // the window of the chart, neither bound has to be a trading day, bars align to their own grid
 const chartSchema = z
@@ -106,13 +110,14 @@ const chartSchema = z
     message: "start must not be after end",
     path: ["start"],
   });
+type ChartQuery = z.infer<typeof chartSchema>;
 
 /**
  * Returns every transaction every made in ascending order of one user,
  * optionally limited to the given range, by default the whole orderbook
  */
 router.route("/orderbook").get(requireAuth, validateQuery(orderbookSchema), async (req, res) => {
-  const { start, end } = req.query as unknown as z.infer<typeof orderbookSchema>;
+  const { start, end } = req.validatedQuery as OrderbookQuery;
 
   const orderbook: Orderbook = await getOrderBook(req.user!.id, start, end);
   res.status(200).json(orderbook);
@@ -123,7 +128,7 @@ router.route("/orderbook").get(requireAuth, validateQuery(orderbookSchema), asyn
  * already sold off completely, without a status every ticker ever traded is returned
  */
 router.route("/holdings").get(requireAuth, validateQuery(holdingsSchema), async (req, res) => {
-  const { status } = req.query as unknown as z.infer<typeof holdingsSchema>;
+  const { status } = req.validatedQuery as HoldingsQuery;
 
   // every order made in ascending order
   const orderbook: Orderbook = await getOrderBook(req.user!.id);
@@ -139,7 +144,7 @@ router.route("/holdings").get(requireAuth, validateQuery(holdingsSchema), async 
  * its market price at start instead of what it once was bought for
  */
 router.route("/stats").get(requireAuth, validateQuery(statsSchema), async (req, res) => {
-  const { tickers, end, start } = req.query as unknown as z.infer<typeof statsSchema>;
+  const { tickers, end, start } = req.validatedQuery as StatsQuery;
 
   // every order made in ascending order
   const orderbook: Orderbook = await getOrderBook(req.user!.id);
@@ -165,7 +170,7 @@ router.route("/stats").get(requireAuth, validateQuery(statsSchema), async (req, 
  * for those shares and stays flat across the window, gain is the distance between the two.
  */
 router.route("/chart").get(requireAuth, validateQuery(chartSchema), async (req, res) => {
-  const { timeframe, start, end } = req.query as unknown as z.infer<typeof chartSchema>;
+  const { timeframe, start, end } = req.validatedQuery as ChartQuery;
 
   // every order made in ascending order
   const orderbook: Orderbook = await getOrderBook(req.user!.id);
@@ -190,7 +195,7 @@ router.route("/chart").get(requireAuth, validateQuery(chartSchema), async (req, 
 });
 
 router.route("/transaction").post(requireAuth, validate(portfolioSchema), async (req, res) => {
-  const order = req.body as z.infer<typeof portfolioSchema>;
+  const order = req.body as PortfolioSchema;
 
   await processOrder(order, req.user!.id);
   res.status(201).json({ message: "Transaction created" });

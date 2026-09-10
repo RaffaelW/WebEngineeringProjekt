@@ -25,7 +25,7 @@ const schema = z
 type Schema = z.infer<typeof schema>;
 
 router.route("/").get(validateQuery(schema), async (req, res) => {
-  const { start, end } = req.query as Schema;
+  const { start, end } = req.validatedQuery as Schema;
   const leaderboard = await getLeaderboard(start, end);
   res.json(leaderboard);
 });

@@ -18,9 +18,10 @@ const historySchema = z.object({
   end: z.iso.date().transform((s: string) => endOfDay(new Date(s))),
   timeframe: z.enum(timeFrameKeys),
 });
+type HistoryQuery = z.infer<typeof historySchema>;
 
 router.route("/").get(requireAuth, validateQuery(historySchema), async (req, res) => {
-  const { ticker, start, end, timeframe } = req.query as unknown as z.infer<typeof historySchema>;
+  const { ticker, start, end, timeframe } = req.validatedQuery as HistoryQuery;
   const bars = await getHistory(ticker, timeframe, start, end);
   res.status(200).json(bars);
 });

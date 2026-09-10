@@ -44,6 +44,11 @@ try {
   throw error;
 }
 
-app.listen(PORT, () => {
+app.listen(PORT, (error: Error | undefined) => {
+  if (error) {
+    console.error("Failed to start server", error);
+    throw error;
+  }
+
   console.log(`Server running on http://localhost:${PORT}`);
 });

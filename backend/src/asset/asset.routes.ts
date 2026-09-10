@@ -10,9 +10,12 @@ const autoCompleteSchema = z.object({
   name: z.string().min(1).max(25),
 });
 
+type AutoCompleteQuery = z.infer<typeof autoCompleteSchema>;
+
 router
   .route("/autocomplete")
   .get(requireAuth, validateQuery(autoCompleteSchema), async (req, res) => {
-    const assets: AutoCompleteType[] = await getAutoCompleteData(req.query.name as string);
+    const query = req.validatedQuery as AutoCompleteQuery;
+    const assets: AutoCompleteType[] = await getAutoCompleteData(query.name);
     res.status(200).json(assets);
   });
