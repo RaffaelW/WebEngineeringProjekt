@@ -2,15 +2,16 @@ import { NextFunction, Request, Response } from "express";
 import { RangeError } from "../history/history.service.js";
 import { GateWayError, NoMarketDataError, TickerNotFoundError } from "../lib/alpaca.js";
 import { DateError } from "../lib/date.js";
-import { HoldingError } from "../portfolio/portfolio.service.js";
+import { HoldingError, NotATradeDayError } from "../portfolio/portfolio.service.js";
 
 export function notFoundHandler(req: Request, res: Response) {
   res.status(404).json({ message: "Not Found" });
 }
 
-export function errorHandler(error: Error, _req: Request, res: Response, _next: NextFunction) {
-  // The _next parameter is unused, but we include it to satisfy the Express error handler signature
-  void _next;
+export function errorHandler(error: Error, _req: Request, res: Response, next: NextFunction) {
+  if (res.headersSent) {
+    return next(error);
+  }
 
   if (error instanceof GateWayError) {
     console.error("Failed to fetch market data from upstream", error);
@@ -24,12 +25,17 @@ export function errorHandler(error: Error, _req: Request, res: Response, _next: 
 
   if (error instanceof NoMarketDataError) {
     console.error("No market data available", error);
-    return res.status(400).json({ message: "No market data available" });
+    return res.status(400).json({ message: error.message });
   }
 
   if (error instanceof HoldingError) {
     console.error("Invalid holding operation", error);
-    return res.status(400).json({ message: "Invalid holding operation" });
+    return res.status(400).json({ message: error.message });
+  }
+
+  if (error instanceof NotATradeDayError) {
+    console.error("Not a trade day", error);
+    return res.status(400).json({ message: error.message });
   }
 
   if (error instanceof RangeError || error instanceof DateError) {
@@ -38,5 +44,6 @@ export function errorHandler(error: Error, _req: Request, res: Response, _next: 
   }
 
   console.error(error);
-  res.status(500).json({ message: "Internal server error" });
+  // pass to default error handler
+  next(error);
 }
