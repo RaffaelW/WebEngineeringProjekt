@@ -1,15 +1,14 @@
-import { IsoDate, IsoDateTime } from "./api";
+import type { TimeFrameKey } from "../../../../models/history";
+import type { IsoDate, IsoDateTime } from "./api";
 
-export type TimeFrame = "1min" | "1h" | "1d" | "1w" | "1mo";
-
-export interface HistoryQuery {
+export interface RawHistoryQuery {
   ticker: string;
   start: IsoDate;
   end: IsoDate;
-  timeframe: TimeFrame;
+  timeframe: TimeFrameKey;
 }
 
-export interface AssetHistory {
+export interface RawAssetHistory {
   ticker: string;
   time: IsoDateTime;
   high: number;

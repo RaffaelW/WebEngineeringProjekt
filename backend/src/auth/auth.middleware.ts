@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { getUserById } from "../user/user.service.js";
 import { readAuthToken } from "./auth.service.js";
+import type { ApiMessage } from "../../../models/api.js";
 
 export const authCookieName = "user";
 
@@ -31,7 +32,7 @@ export async function storeToken(req: Request, _res: Response, next: NextFunctio
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.user) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return res.status(401).json({ message: "Unauthorized" } satisfies ApiMessage);
   }
   next();
 }

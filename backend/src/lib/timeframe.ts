@@ -1,7 +1,6 @@
 import { TimeFrame } from "@prisma/client";
 import { values } from "@alpacahq/alpaca-trade-api";
-
-export type TimeFrameKey = "1min" | "1h" | "1d" | "1w" | "1mo";
+import type { TimeFrameKey } from "../../../models/history.js";
 
 const msPerMinute: number = 60 * 1000;
 const msPerHour: number = 60 * msPerMinute;

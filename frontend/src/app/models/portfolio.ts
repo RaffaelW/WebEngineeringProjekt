@@ -1,16 +1,13 @@
-import { IsoDate, IsoDateTime } from "./api";
-import { TimeFrame } from "./history";
+import type { TimeFrameKey } from "../../../../models/history";
+import type { TransactionType } from "../../../../models/portfolio";
+import type { IsoDate, IsoDateTime } from "./api";
 
-export type TransactionType = "buy" | "sell";
-
-export type HoldingStatus = "active" | "inactive";
-
-export interface OrderbookQuery {
+export interface RawOrderbookQuery {
   start?: IsoDate;
   end?: IsoDate;
 }
 
-export interface Order {
+export interface RawOrder {
   name: string;
   ticker: string;
   transactionType: TransactionType;
@@ -18,40 +15,27 @@ export interface Order {
   shares_amount: number;
 }
 
-export interface HoldingsQuery {
-  status?: HoldingStatus;
-}
-
-export interface StatsQuery {
+export interface RawStatsQuery {
+  // comma separated, the backend splits it
   tickers?: string;
   start?: IsoDate;
   end?: IsoDate;
 }
 
-export interface Stats {
-  ticker: string;
-  name: string;
-  shares: number;
-  invested_money: number;
-  current_value: number;
-  realized_gains: number;
-  performance: number;
-}
-
-export interface PortfolioChartQuery {
-  timeframe: TimeFrame;
+export interface RawPortfolioChartQuery {
+  timeframe: TimeFrameKey;
   start?: IsoDate;
   end?: IsoDate;
 }
 
-export interface PortfolioBar {
+export interface RawPortfolioBar {
   time: IsoDateTime;
   value: number;
   gain: number;
   invested: number;
 }
 
-export interface TransactionRequest {
+export interface RawTransactionRequest {
   ticker: string;
   transactionType: TransactionType;
   shares_amount: number;

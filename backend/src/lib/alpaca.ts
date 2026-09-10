@@ -14,16 +14,6 @@ export class TickerNotFoundError extends Error {
   }
 }
 
-export type AssetHistory = {
-  ticker: string;
-  time: Date;
-  high: number;
-  low: number;
-  open: number;
-  close: number;
-  volume: number;
-};
-
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(dirname, "..", "..", "..", ".env") });
 

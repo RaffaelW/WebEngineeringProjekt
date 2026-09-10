@@ -1,14 +1,10 @@
 import { Asset, History } from "@prisma/client";
-import {
-  AssetHistory,
-  TickerNotFoundError,
-  clampToAvailable,
-  fetchAssetHistory,
-} from "../lib/alpaca.js";
+import { TickerNotFoundError, clampToAvailable, fetchAssetHistory } from "../lib/alpaca.js";
 import { prisma } from "../lib/prisma.js";
-import { TimeFrameKey, TimeFrameSpec, timeFrames } from "../lib/timeframe.js";
+import { TimeFrameSpec, timeFrames } from "../lib/timeframe.js";
 import { Bar } from "@alpacahq/alpaca-trade-api";
 import { cacheBars, checkCoverage } from "../lib/database.js";
+import type { AssetHistory, TimeFrameKey } from "../../../models/history.js";
 
 export class RangeError extends Error {
   constructor(start: Date, end: Date, timeframe: TimeFrameKey, violation: "small" | "large") {
