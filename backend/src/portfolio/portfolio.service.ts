@@ -53,6 +53,7 @@ export type Stats = {
   // shares * live price, 0 once the position is closed
   current_value: number;
   realized_gains: number;
+  total_costs: number;
   // (realized + unrealized) / cost basis of the window, a carried position costs its price at start
   performance: number;
 };
@@ -379,6 +380,7 @@ export async function calculateStats(
         invested_money: 0,
         current_value: 0,
         realized_gains: 0,
+        total_costs: 0,
         performance: 0,
       };
     }
@@ -401,11 +403,22 @@ export async function calculateStats(
       invested_money: holding.investedMoney,
       current_value,
       realized_gains: holding.realizedGains,
-      performance:
-        holding.totalCost === 0 ? 0 : (holding.realizedGains + unrealized) / holding.totalCost, //avoid division by 0
+      total_costs: holding.totalCost,
+      performance: calculatePerformance(holding.totalCost, holding.realizedGains + unrealized),
     };
   });
   const results = await Promise.all(promises);
 
   return results.filter((r): r is Stats => r !== undefined);
+}
+
+/**
+ * Helper function to calculate the performance of a ticker or a portfolio.
+ * The performance is calculated as (realized + unrealized) / cost basis of the window.
+ * @param costs The total costs of the ticker or portfolio.
+ * @param gains The total gains (realized + unrealized) of the ticker or portfolio.
+ * @returns The performance as a number.
+ */
+export function calculatePerformance(costs: number, gains: number): number {
+  return costs === 0 ? 0 : gains / costs; //avoid division by 0
 }
