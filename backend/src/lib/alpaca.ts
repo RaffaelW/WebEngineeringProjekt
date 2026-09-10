@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { Alpaca, Bar, trading, values } from "@alpacahq/alpaca-trade-api";
 import dotenv from "dotenv";
 
+import { getHistory } from "../history/history.service.js";
 import { endOfDay, startOfDay } from "./date.js";
 
 export type AlpacaAsset = trading.Assets;
@@ -130,16 +131,16 @@ export async function fetchAssetHistory(
  * Returns the last bar for a given ticker at or before the given time, looking back up to an hour
  * if time is during market close the last bar of the previous session is returned
  */
-export async function getApproxBarAt(ticker: string, time: Date): Promise<Bar> {
+export async function getApproxBarAt(ticker: string, time: Date): Promise<AssetHistory> {
   const LOOK_BACK_MS: number = 60 * 60 * 1000;
-  const bars: Bar[] = await fetchAssetHistory(
+  const bars: AssetHistory[] = await getHistory(
     ticker,
-    values.TimeFrame.Minute,
+    "1min",
     new Date(time.getTime() - LOOK_BACK_MS),
     time,
   );
 
-  const last: Bar | undefined = bars.at(-1);
+  const last: AssetHistory | undefined = bars.at(-1);
   if (!last) {
     throw new NoMarketDataError(
       `No market data for ${ticker} in the hour before ${time.toISOString()}, the market was closed, the session had not opened yet, or the timestamp is within the last 15 minutes`,
@@ -165,15 +166,10 @@ export async function fetchLivePrice(ticker: string): Promise<number> {
 /**
  * Last minute bar the asset traded on the given day
  */
-export async function fetchLastBarOfDay(ticker: string, day: Date): Promise<Bar> {
-  const bars: Bar[] = await fetchAssetHistory(
-    ticker,
-    values.TimeFrame.Minute,
-    startOfDay(day),
-    endOfDay(day),
-  );
+export async function fetchLastBarOfDay(ticker: string, day: Date): Promise<AssetHistory> {
+  const bars: AssetHistory[] = await getHistory(ticker, "1min", startOfDay(day), endOfDay(day));
 
-  const last: Bar | undefined = bars.at(-1);
+  const last: AssetHistory | undefined = bars.at(-1);
   if (!last) {
     throw new NoMarketDataError(`No market data for ${ticker} on ${startOfDay(day).toISOString()}`);
   }
@@ -183,15 +179,10 @@ export async function fetchLastBarOfDay(ticker: string, day: Date): Promise<Bar>
 /**
  * First minute bar the asset traded on the given day
  */
-export async function fetchFirstBarOfDay(ticker: string, day: Date): Promise<Bar> {
-  const bars: Bar[] = await fetchAssetHistory(
-    ticker,
-    values.TimeFrame.Minute,
-    startOfDay(day),
-    endOfDay(day),
-  );
+export async function fetchFirstBarOfDay(ticker: string, day: Date): Promise<AssetHistory> {
+  const bars: AssetHistory[] = await getHistory(ticker, "1min", startOfDay(day), endOfDay(day));
 
-  const first: Bar | undefined = bars.at(0);
+  const first: AssetHistory | undefined = bars.at(0);
   if (!first) {
     throw new NoMarketDataError(`No market data for ${ticker} on ${startOfDay(day).toISOString()}`);
   }

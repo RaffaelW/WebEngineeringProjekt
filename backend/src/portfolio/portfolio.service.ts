@@ -110,7 +110,7 @@ export async function processOrder(order: transactionOrder, userId: number): Pro
   await cacheBars(asset.id, daily.prisma, bars, fetchStart, clampedEnd);
 }
 
-function barMidpoint(bar: Bar): number {
+function barMidpoint(bar: Bar | AssetHistory): number {
   return (bar.high + bar.low) / 2;
 }
 
