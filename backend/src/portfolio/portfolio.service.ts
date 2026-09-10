@@ -1,5 +1,14 @@
+import { Bar } from "@alpacahq/alpaca-trade-api";
 import { TransactionType } from "@prisma/client";
-import { prisma } from "../lib/prisma.js";
+import {
+  clampToAvailable,
+  fetchAssetHistory,
+  fetchFirstBarOfDay,
+  fetchLastBarOfDay,
+  fetchLivePrice,
+  getApproxBarAt,
+  TickerNotFoundError,
+} from "../lib/alpaca.js";
 import { cacheBars } from "../lib/database.js";
 import {
   DateError,
@@ -9,17 +18,8 @@ import {
   isTradeDay,
   startOfDay,
 } from "../lib/date.js";
-import {
-  getApproxBarAt,
-  clampToAvailable,
-  fetchAssetHistory,
-  fetchFirstBarOfDay,
-  fetchLastBarOfDay,
-  fetchLivePrice,
-  TickerNotFoundError,
-} from "../lib/alpaca.js";
-import { TimeFrameSpec, timeFrames } from "../lib/timeframe.js";
-import { Bar } from "@alpacahq/alpaca-trade-api";
+import { prisma } from "../lib/prisma.js";
+import { timeFrames, TimeFrameSpec } from "../lib/timeframe.js";
 
 export class NotATradeDayError extends DateError {
   constructor(time: Date) {
@@ -52,6 +52,7 @@ export type Stats = {
   // shares * live price, 0 once the position is closed
   current_value: number;
   realized_gains: number;
+  total_costs: number;
   // (realized + unrealized) / cost basis of the window, a carried position costs its price at start
   performance: number;
 };
@@ -378,6 +379,7 @@ export async function calculateStats(
         invested_money: 0,
         current_value: 0,
         realized_gains: 0,
+        total_costs: 0,
         performance: 0,
       });
       continue;
@@ -401,10 +403,21 @@ export async function calculateStats(
       invested_money: holding.investedMoney,
       current_value,
       realized_gains: holding.realizedGains,
-      performance:
-        holding.totalCost === 0 ? 0 : (holding.realizedGains + unrealized) / holding.totalCost, //avoid division by 0
+      total_costs: holding.totalCost,
+      performance: calculatePerformance(holding.totalCost, holding.realizedGains + unrealized),
     });
   }
 
   return stats;
+}
+
+/**
+ * Helper function to calculate the performance of a ticker or a portfolio.
+ * The performance is calculated as (realized + unrealized) / cost basis of the window.
+ * @param costs The total costs of the ticker or portfolio.
+ * @param gains The total gains (realized + unrealized) of the ticker or portfolio.
+ * @returns The performance as a number.
+ */
+export function calculatePerformance(costs: number, gains: number): number {
+  return costs === 0 ? 0 : gains / costs; //avoid division by 0
 }

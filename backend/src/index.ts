@@ -6,6 +6,7 @@ import { populateAssetTable } from "./asset/asset.service.js";
 import { storeToken } from "./auth/auth.middleware.js";
 import { router as authRouter } from "./auth/auth.routes.js";
 import { router as historyRouter } from "./history/history.routes.js";
+import { router as leaderboardRouter } from "./leaderboard/leaderboard.routes.js";
 import { router as portfolioRouter } from "./portfolio/portfolio.routes.js";
 
 if (!process.env.JWT_SECRET) {
@@ -28,6 +29,7 @@ app.use(storeToken);
 app.use("/api/auth", authRouter);
 app.use("/api/assets", assetRouter);
 app.use("/api/history", historyRouter);
+app.use("/api/leaderboard", leaderboardRouter);
 app.use("/api/portfolio", portfolioRouter);
 
 try {
