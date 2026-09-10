@@ -44,11 +44,11 @@ try {
   throw error;
 }
 
-app.listen(PORT, (error: Error | undefined) => {
-  if (error) {
-    console.error("Failed to start server", error);
-    throw error;
-  }
-
+const server = app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+});
+
+server.on("error", (error: unknown) => {
+  console.error("Server error", error);
+  process.exit(1);
 });
