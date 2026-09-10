@@ -1,5 +1,15 @@
+import { Bar } from "@alpacahq/alpaca-trade-api";
 import { TransactionType } from "@prisma/client";
-import { prisma } from "../lib/prisma.js";
+import {
+  AssetHistory,
+  clampToAvailable,
+  fetchAssetHistory,
+  fetchFirstBarOfDay,
+  fetchLastBarOfDay,
+  fetchLivePrice,
+  getApproxBarAt,
+  TickerNotFoundError,
+} from "../lib/alpaca.js";
 import { cacheBars } from "../lib/database.js";
 import {
   DateError,
@@ -9,17 +19,8 @@ import {
   isTradeDay,
   startOfDay,
 } from "../lib/date.js";
-import {
-  getApproxBarAt,
-  clampToAvailable,
-  fetchAssetHistory,
-  fetchFirstBarOfDay,
-  fetchLastBarOfDay,
-  fetchLivePrice,
-  TickerNotFoundError,
-} from "../lib/alpaca.js";
-import { TimeFrameSpec, timeFrames } from "../lib/timeframe.js";
-import { Bar } from "@alpacahq/alpaca-trade-api";
+import { prisma } from "../lib/prisma.js";
+import { timeFrames, TimeFrameSpec } from "../lib/timeframe.js";
 
 export class NotATradeDayError extends DateError {
   constructor(time: Date) {
@@ -138,12 +139,14 @@ export async function getHolding(
     holdings.set(ticker, { ...holding });
   }
 
-  for (const order of orderbook) {
-    // get the data of that ticker at that time, only approximately since not every minute holds a data
-    const bar: Bar = await getApproxBarAt(order.ticker, order.time);
+  // fetch all bars in parallel
+  const bars = await Promise.all(
+    orderbook.map(async (order) => getApproxBarAt(order.ticker, order.time)),
+  );
 
+  for (const [index, order] of orderbook.entries()) {
     // smallest timeframe in external api restrict to 1min therefore take the avg. price as approx. price
-    const price: number = barMidpoint(bar);
+    const price: number = barMidpoint(bars[index]);
     const holding: Holding = holdings.get(order.ticker) ?? {
       name: order.name,
       shares: 0,
@@ -273,13 +276,13 @@ export async function openingHoldings(
 
   const opening: Map<string, Holding> = new Map();
 
-  for (const [ticker, holding] of carried) {
-    // sold off before the window ever opened, nothing is carried in
-    if (holding.shares === 0) {
-      continue;
-    }
+  const heldTickers = [...carried.entries()].filter(([, h]) => h.shares > 0);
 
-    const price: number = barMidpoint(await fetchFirstBarOfDay(ticker, start));
+  // fetch all first bars in parallel
+  const bars = await Promise.all(heldTickers.map(([ticker]) => fetchFirstBarOfDay(ticker, start)));
+
+  for (const [index, [ticker, holding]] of heldTickers.entries()) {
+    const price: number = barMidpoint(bars[index]);
     const cost: number = holding.shares * price;
 
     opening.set(ticker, {
@@ -357,8 +360,6 @@ export async function calculateStats(
   // every ticker with information about it which is held or was completely sold off
   const holdings: Map<string, Holding> = await getHolding(windowOrderbook, opening);
 
-  const stats: Stats[] = [];
-
   const endIsToday: boolean = startOfDay(end).getTime() === startOfDay(new Date()).getTime();
   const hasOpenPosition: boolean = [...holdings.values()].some(
     (holding: Holding) => holding.shares > 0,
@@ -366,12 +367,12 @@ export async function calculateStats(
   // resolved once instead of per ticker, and only when it can change a price
   const useLivePrice: boolean = endIsToday && hasOpenPosition && (await isMarketOpen());
 
-  for (const ticker of tickers) {
+  const promises: Promise<Stats | undefined>[] = tickers.map(async (ticker) => {
     const holding: Holding | undefined = holdings.get(ticker);
 
     // if user never held that ticker return a stats object with 0 values, instead of throwing an error
     if (!holding) {
-      stats.push({
+      return {
         ticker,
         name: "",
         shares: 0,
@@ -379,8 +380,7 @@ export async function calculateStats(
         current_value: 0,
         realized_gains: 0,
         performance: 0,
-      });
-      continue;
+      };
     }
 
     // price is determined by the end of the day, or live if the market is open and the position is still held
@@ -394,7 +394,7 @@ export async function calculateStats(
     const current_value: number = holding.shares * price;
     const unrealized: number = current_value - holding.investedMoney;
 
-    stats.push({
+    return {
       ticker,
       name: holding.name,
       shares: holding.shares,
@@ -403,8 +403,9 @@ export async function calculateStats(
       realized_gains: holding.realizedGains,
       performance:
         holding.totalCost === 0 ? 0 : (holding.realizedGains + unrealized) / holding.totalCost, //avoid division by 0
-    });
-  }
+    };
+  });
+  const results = await Promise.all(promises);
 
-  return stats;
+  return results.filter((r): r is Stats => r !== undefined);
 }
