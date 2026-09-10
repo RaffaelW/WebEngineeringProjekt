@@ -26,3 +26,12 @@ export async function deleteUser(id: number) {
     where: { id },
   });
 }
+
+export async function getUserList() {
+  return await prisma.appUser.findMany({
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+}
