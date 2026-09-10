@@ -19,27 +19,22 @@ export function errorHandler(error: Error, _req: Request, res: Response, next: N
   }
 
   if (error instanceof TickerNotFoundError) {
-    console.error("Asset not found", error);
     return res.status(404).json({ message: "Asset not found" });
   }
 
   if (error instanceof NoMarketDataError) {
-    console.error("No market data available", error);
     return res.status(400).json({ message: error.message });
   }
 
   if (error instanceof HoldingError) {
-    console.error("Invalid holding operation", error);
     return res.status(400).json({ message: error.message });
   }
 
   if (error instanceof NotATradeDayError) {
-    console.error("Not a trade day", error);
     return res.status(400).json({ message: error.message });
   }
 
   if (error instanceof RangeError || error instanceof DateError) {
-    console.error("Invalid range or date", error);
     return res.status(400).json({ message: error.message });
   }
 
