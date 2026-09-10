@@ -33,15 +33,15 @@ export async function getLeaderboard(
   start: Date | undefined,
   end: Date | undefined,
 ): Promise<Leaderboard> {
-  const windowEnd: Date = await getLatestValidEnd(end);
   const windowStart: Date = await getValidStart(start);
+  const windowEnd: Date = await getLatestValidEnd(end);
 
   const users = await getUserList();
   const leaderboard: Leaderboard = [];
 
   // calculate stats for each user in parallel
   const promises = users.map(async (user) => {
-    const orderbook: Orderbook = await getOrderBook(user.id);
+    const orderbook: Orderbook = await getOrderBook(user.id, windowStart, windowEnd);
     // Get unique tickers from the orderbook
     const tickers = [...new Set(orderbook.map((order) => order.ticker))];
 
