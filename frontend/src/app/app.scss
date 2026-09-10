@@ -1,0 +1,35 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.app-toolbar {
+  background-color: var(--mat-sys-surface-container);
+}
+
+.app-brand {
+  font: var(--mat-sys-title-medium);
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+}
+
+nav[mat-tab-nav-bar] {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--mat-sys-surface-container);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.app-content {
+  display: block;
+  flex: 1 1 auto;
+  padding: 1.5rem;
+}
+
+@media (max-width: 600px) {
+  .app-content {
+    padding: 1rem;
+  }
+}
