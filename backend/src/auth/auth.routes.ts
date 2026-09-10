@@ -1,3 +1,4 @@
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 import { Router } from "express";
 import z from "zod";
 import { validate } from "../middleware/validation.middleware.js";
@@ -27,7 +28,7 @@ router.route("/register").post(validate(authSchema), async (req, res) => {
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
     // check for unique constraint violation error (P2002) from Prisma
-    if (error instanceof Error && "code" in error && error.code === "P2002") {
+    if (error instanceof PrismaClientKnownRequestError && error.code === "P2002") {
       return res.status(409).json({ message: "User already exists" });
     }
 
