@@ -1,35 +1,32 @@
+import { TransactionType } from "@prisma/client";
 import { Router } from "express";
 import z from "zod";
+import { ApiMessage } from "../../../models/api.js";
 import {
-  calculateStats,
-  getLatestValidEnd,
+  TransactionRequest,
+  OrderbookQuery,
+  StatsQuery,
+  HoldingStatus,
+  HoldingsQuery,
+  PortfolioChartQuery,
+  Orderbook,
+  PortfolioBar,
+  Stats,
+} from "../../../models/portfolio.js";
+import { requireAuth } from "../auth/auth.middleware.js";
+import { startOfDay, endOfDay, getLatestTradedDay } from "../lib/date.js";
+import { timeFrameKeys } from "../lib/timeframe.js";
+import { validateQuery, validate } from "../middleware/validation.middleware.js";
+import { calculatePortfolioChart } from "./chart.service.js";
+import {
   getOrderBook,
   getStocksByStatus,
-  getValidStart,
-  HoldingError,
-  NotATradeDayError,
-  processOrder,
   setWantedTickers,
+  getLatestValidEnd,
+  getValidStart,
+  calculateStats,
+  processOrder,
 } from "./portfolio.service.js";
-import { TransactionType } from "@prisma/client";
-import { requireAuth } from "../auth/auth.middleware.js";
-import { validate, validateQuery } from "../middleware/validation.middleware.js";
-import { DateError, endOfDay, getLatestTradedDay, startOfDay } from "../lib/date.js";
-import { GateWayError, NoMarketDataError, TickerNotFoundError } from "../lib/alpaca.js";
-import { timeFrameKeys } from "../lib/timeframe.js";
-import { RangeError } from "../history/history.service.js";
-import { calculatePortfolioChart } from "./chart.service.js";
-import type {
-  HoldingsQuery,
-  Orderbook,
-  OrderbookQuery,
-  PortfolioBar,
-  PortfolioChartQuery,
-  Stats,
-  StatsQuery,
-  TransactionRequest,
-} from "../../../models/portfolio.js";
-import type { ApiMessage } from "../../../models/api.js";
 
 export const router = Router();
 
@@ -95,13 +92,12 @@ const statsSchema = z
     message: "start must not be after end",
     path: ["start"],
   }) satisfies z.ZodType<StatsQuery>;
-type StatsSchema = z.infer<typeof statsSchema>;
 
 // absent means every ticker ever traded, held or already sold off
 const holdingsSchema = z.object({
-  status: z.enum(["active", "inactive"]).optional(),
+  status: z.enum(["active", "inactive"] satisfies HoldingStatus[]).optional(),
 }) satisfies z.ZodType<HoldingsQuery>;
-type HoldingsSchema = z.infer<typeof holdingsSchema>;
+type HoldingsSchemaQuery = z.infer<typeof holdingsSchema>;
 
 // the window of the chart, neither bound has to be a trading day, bars align to their own grid
 const chartSchema = z
@@ -122,17 +118,17 @@ const chartSchema = z
     message: "start must not be after end",
     path: ["start"],
   }) satisfies z.ZodType<PortfolioChartQuery>;
-type ChartSchema = z.infer<typeof chartSchema>;
+type ChartQuery = z.infer<typeof chartSchema>;
 
 /**
  * Returns every transaction every made in ascending order of one user,
  * optionally limited to the given range, by default the whole orderbook
  */
 router.route("/orderbook").get(requireAuth, validateQuery(orderbookSchema), async (req, res) => {
-  const { start, end } = req.query as OrderbookSchema;
+  const { start, end } = req.validatedQuery as OrderbookSchema;
 
   const orderbook: Orderbook = await getOrderBook(req.user!.id, start, end);
-  res.status(200).json(orderbook);
+  res.status(200).json(orderbook satisfies Orderbook);
 });
 
 /**
@@ -140,23 +136,13 @@ router.route("/orderbook").get(requireAuth, validateQuery(orderbookSchema), asyn
  * already sold off completely, without a status every ticker ever traded is returned
  */
 router.route("/holdings").get(requireAuth, validateQuery(holdingsSchema), async (req, res) => {
-  try {
-    const { status } = req.query as HoldingsSchema;
+  const { status } = req.validatedQuery as HoldingsSchemaQuery;
 
-    // every order made in ascending order
-    const orderbook: Orderbook = await getOrderBook(req.user!.id);
-    const tickers: string[] = getStocksByStatus(orderbook, status);
+  // every order made in ascending order
+  const orderbook: Orderbook = await getOrderBook(req.user!.id);
+  const tickers: string[] = getStocksByStatus(orderbook, status);
 
-    res.status(200).json(tickers);
-  } catch (error) {
-    // an orderbook that sells more than it holds
-    if (error instanceof HoldingError) {
-      return res.status(400).json({ message: error.message } satisfies ApiMessage);
-    }
-
-    console.error("Failed to load holdings", error);
-    res.status(500).json({ message: "Internal server error" } satisfies ApiMessage);
-  }
+  res.status(200).json(tickers satisfies string[]);
 });
 
 /**
@@ -166,43 +152,22 @@ router.route("/holdings").get(requireAuth, validateQuery(holdingsSchema), async 
  * its market price at start instead of what it once was bought for
  */
 router.route("/stats").get(requireAuth, validateQuery(statsSchema), async (req, res) => {
-  try {
-    const { tickers, end, start } = req.query as StatsSchema;
+  const { tickers, end, start } = req.validatedQuery as StatsQuery;
 
-    // every order made in ascending order
-    const orderbook: Orderbook = await getOrderBook(req.user!.id);
+  // every order made in ascending order
+  const orderbook: Orderbook = await getOrderBook(req.user!.id);
 
-    // if no tickers are queried wanted is set to every ticker ever held
-    const wanted: string[] = setWantedTickers(orderbook, tickers);
+  // if no tickers are queried wanted is set to every ticker ever held
+  const wanted: string[] = setWantedTickers(orderbook, tickers);
 
-    // if end is valid trading return end else return the previous trading day
-    const windowEnd: Date = await getLatestValidEnd(end);
-    // without a start the window starts at the very first order
-    const windowStart: Date = await getValidStart(start);
+  // if end is valid trading return end else return the previous trading day
+  const windowEnd: Date = await getLatestValidEnd(end);
+  // without a start the window starts at the very first order
+  const windowStart: Date = await getValidStart(start);
 
-    const stats: Stats[] = await calculateStats(orderbook, wanted, windowEnd, windowStart);
+  const stats: Stats[] = await calculateStats(orderbook, wanted, windowEnd, windowStart);
 
-    res.status(200).json(stats);
-  } catch (error) {
-    // a non tradeable end, an end without market data, or an orderbook that sells more than it holds
-    if (
-      error instanceof DateError ||
-      error instanceof NoMarketDataError ||
-      error instanceof HoldingError
-    ) {
-      return res.status(400).json({ message: error.message } satisfies ApiMessage);
-    }
-
-    if (error instanceof GateWayError) {
-      console.error("Failed to fetch market data from upstream", error);
-      return res
-        .status(502)
-        .json({ message: "Failed to fetch market data from upstream" } satisfies ApiMessage);
-    }
-
-    console.error("Failed to calculate portfolio stats", error);
-    res.status(500).json({ message: "Internal server error" } satisfies ApiMessage);
-  }
+  res.status(200).json(stats satisfies Stats[]);
 });
 
 /**
@@ -213,83 +178,33 @@ router.route("/stats").get(requireAuth, validateQuery(statsSchema), async (req, 
  * for those shares and stays flat across the window, gain is the distance between the two.
  */
 router.route("/chart").get(requireAuth, validateQuery(chartSchema), async (req, res) => {
-  try {
-    // timeframe is required and req.query is declared as ParsedQs, which does not
-    // carry it, so the conversion only compiles through unknown
-    const { timeframe, start, end } = req.query as unknown as ChartSchema;
+  const { timeframe, start, end } = req.validatedQuery as ChartQuery;
 
-    // every order made in ascending order
-    const orderbook: Orderbook = await getOrderBook(req.user!.id);
+  // every order made in ascending order
+  const orderbook: Orderbook = await getOrderBook(req.user!.id);
 
-    // nothing was ever traded, there is no portfolio to chart
-    if (orderbook.length === 0) {
-      return res.status(200).json([]);
-    }
-
-    const windowEnd: Date = end ?? endOfDay(await getLatestTradedDay(new Date()));
-    // without a start the chart begins on the day the first order was placed
-    const windowStart: Date = start ?? startOfDay(orderbook[0].time);
-
-    const bars: PortfolioBar[] = await calculatePortfolioChart(
-      orderbook,
-      timeframe,
-      windowStart,
-      windowEnd,
-    );
-
-    res.status(200).json(bars);
-  } catch (error) {
-    if (error instanceof TickerNotFoundError) {
-      console.error("Asset not found", error);
-      return res.status(404).json({ message: "Asset not found" } satisfies ApiMessage);
-    }
-
-    // a window the timeframe cannot serve, a day without market data, or an orderbook
-    // that sells more than it holds
-    if (
-      error instanceof RangeError ||
-      error instanceof DateError ||
-      error instanceof NoMarketDataError ||
-      error instanceof HoldingError
-    ) {
-      return res.status(400).json({ message: error.message } satisfies ApiMessage);
-    }
-
-    if (error instanceof GateWayError) {
-      console.error("Failed to fetch market data from upstream", error);
-      return res
-        .status(502)
-        .json({ message: "Failed to fetch market data from upstream" } satisfies ApiMessage);
-    }
-
-    console.error("Failed to calculate portfolio chart", error);
-    res.status(500).json({ message: "Internal server error" } satisfies ApiMessage);
+  // nothing was ever traded, there is no portfolio to chart
+  if (orderbook.length === 0) {
+    return res.status(200).json([]);
   }
+
+  const windowEnd: Date = end ?? endOfDay(await getLatestTradedDay(new Date()));
+  // without a start the chart begins on the day the first order was placed
+  const windowStart: Date = start ?? startOfDay(orderbook[0].time);
+
+  const bars: PortfolioBar[] = await calculatePortfolioChart(
+    orderbook,
+    timeframe,
+    windowStart,
+    windowEnd,
+  );
+
+  res.status(200).json(bars satisfies PortfolioBar[]);
 });
 
 router.route("/transaction").post(requireAuth, validate(portfolioSchema), async (req, res) => {
-  try {
-    const order = req.body as PortfolioSchema;
+  const order = req.body as PortfolioSchema;
 
-    await processOrder(order, req.user!.id);
-    res.status(201).json({ message: "Transaction created" } satisfies ApiMessage);
-  } catch (error) {
-    if (error instanceof TickerNotFoundError) {
-      return res.status(404).json({ message: "Asset not found" } satisfies ApiMessage);
-    }
-
-    if (error instanceof NotATradeDayError) {
-      return res.status(400).json({ message: error.message } satisfies ApiMessage);
-    }
-
-    if (error instanceof GateWayError) {
-      console.error("Failed to fetch market calendar from upstream", error);
-      return res
-        .status(502)
-        .json({ message: "Failed to fetch market calendar from upstream" } satisfies ApiMessage);
-    }
-
-    console.error("Failed to process order", error);
-    res.status(500).json({ message: "Internal server error" } satisfies ApiMessage);
-  }
+  await processOrder(order, req.user!.id);
+  res.status(201).json({ message: "Transaction created" } satisfies ApiMessage);
 });

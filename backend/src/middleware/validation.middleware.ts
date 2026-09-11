@@ -23,7 +23,7 @@ export function validateQuery(schema: ZodType) {
         .status(400)
         .json({ errors: z.treeifyError(result.error) } satisfies ValidationErrorResponse);
     }
-    req.query = result.data as Request["query"];
+    req.validatedQuery = result.data as Record<string, unknown>;
     next();
   };
 }

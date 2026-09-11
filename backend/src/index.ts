@@ -7,6 +7,7 @@ import { storeToken } from "./auth/auth.middleware.js";
 import { router as authRouter } from "./auth/auth.routes.js";
 import { router as historyRouter } from "./history/history.routes.js";
 import { router as leaderboardRouter } from "./leaderboard/leaderboard.routes.js";
+import { errorHandler, notFoundHandler } from "./middleware/error.middleware.js";
 import { router as portfolioRouter } from "./portfolio/portfolio.routes.js";
 
 if (!process.env.JWT_SECRET) {
@@ -32,6 +33,9 @@ app.use("/api/history", historyRouter);
 app.use("/api/leaderboard", leaderboardRouter);
 app.use("/api/portfolio", portfolioRouter);
 
+app.use(notFoundHandler);
+app.use(errorHandler);
+
 try {
   await populateAssetTable();
   console.log("Asset table ready");
@@ -40,6 +44,11 @@ try {
   throw error;
 }
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+});
+
+server.on("error", (error: unknown) => {
+  console.error("Server error", error);
+  process.exit(1);
 });
