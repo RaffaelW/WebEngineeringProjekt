@@ -12,7 +12,10 @@ export class HistoryApi {
   private readonly serializer = inject(SerializeService);
   private readonly baseUrl = `${API_BASE_URL}/history`;
 
-  /** GET /api/history — one candle per period of a single asset in the given range */
+  /**
+   * GET /api/history — one candle per period of a single asset in the given range.
+   * start and end are optional, absent bounds default to the beginning of time and now.
+   */
   getHistory(query: HistoryQuery): Observable<AssetHistory[]> {
     return this.http
       .get<RawAssetHistory[]>(this.baseUrl, {
