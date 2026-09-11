@@ -1,25 +1,25 @@
 import { Service } from "@angular/core";
-import type { AssetHistory, HistoryQuery } from "../../../models/history.d.ts";
-import type { LeaderboardQuery } from "../../../models/leaderboard.d.ts";
-import type {
-  Order,
+import { HistoryQuery, AssetHistory } from "../../../../models/history";
+import { LeaderboardQuery } from "../../../../models/leaderboard";
+import {
   OrderbookQuery,
-  PortfolioBar,
-  PortfolioChartQuery,
+  Order,
   StatsQuery,
+  PortfolioChartQuery,
+  PortfolioBar,
   TransactionRequest,
-} from "../../../models/portfolio.d.ts";
-import type { IsoDate, IsoDateTime } from "./models/api.d.ts";
-import type { RawAssetHistory, RawHistoryQuery } from "./models/history.d.ts";
-import type { RawLeaderboardQuery } from "./models/leaderboard.d.ts";
-import type {
-  RawOrder,
+} from "../../../../models/portfolio";
+import { IsoDate, IsoDateTime } from "../models/api";
+import { RawHistoryQuery, RawAssetHistory } from "../models/history";
+import { RawLeaderboardQuery } from "../models/leaderboard";
+import {
   RawOrderbookQuery,
-  RawPortfolioBar,
-  RawPortfolioChartQuery,
+  RawOrder,
   RawStatsQuery,
+  RawPortfolioChartQuery,
+  RawPortfolioBar,
   RawTransactionRequest,
-} from "./models/portfolio.d.ts";
+} from "../models/portfolio";
 
 // Converts the Raw JSON into the original Data Structures
 @Service()

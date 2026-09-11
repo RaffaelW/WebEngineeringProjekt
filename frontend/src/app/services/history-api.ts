@@ -3,8 +3,8 @@ import { inject, Service } from "@angular/core";
 import { map, Observable } from "rxjs";
 import type { AssetHistory, HistoryQuery } from "../../../../models/history.d.ts";
 import type { RawAssetHistory } from "../models/history.d.ts";
-import { SerializeService } from "../serialize-service";
 import { API_BASE_URL, toHttpParams } from "./api";
+import { SerializeService } from "./serialize-service.js";
 
 @Service()
 export class HistoryApi {

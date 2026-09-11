@@ -2,8 +2,8 @@ import { HttpClient } from "@angular/common/http";
 import { inject, Service } from "@angular/core";
 import { Observable } from "rxjs";
 import type { Leaderboard, LeaderboardQuery } from "../../../../models/leaderboard.d.ts";
-import { SerializeService } from "../serialize-service";
 import { API_BASE_URL, toHttpParams } from "./api";
+import { SerializeService } from "./serialize-service.js";
 
 // Calls the /api/leaderboard routes
 @Service()

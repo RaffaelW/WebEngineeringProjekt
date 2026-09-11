@@ -13,8 +13,8 @@ import type {
   TransactionRequest,
 } from "../../../../models/portfolio.d.ts";
 import type { RawOrder, RawPortfolioBar } from "../models/portfolio.d.ts";
-import { SerializeService } from "../serialize-service";
 import { API_BASE_URL, toHttpParams } from "./api";
+import { SerializeService } from "./serialize-service.js";
 
 @Service()
 export class PortfolioApi {
