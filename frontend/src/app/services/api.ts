@@ -14,14 +14,14 @@ export const withApiCredentials: HttpInterceptorFn = (req, next) => {
 };
 
 /**
- * Builds the query string of a request, absent (undefined) fields are left out
- * instead of being sent as the literal string "undefined".
+ * Builds the query string of a request, absent (undefined) and empty fields are left out
+ * instead of being sent as the literal string "undefined" or as an empty parameter.
  */
 export function toHttpParams(query: object): HttpParams {
   let params = new HttpParams();
 
   for (const [key, value] of Object.entries(query)) {
-    if (value !== undefined) {
+    if (value !== undefined && value !== "") {
       params = params.set(key, String(value));
     }
   }
