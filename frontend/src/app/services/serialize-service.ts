@@ -25,8 +25,12 @@ import {
 @Service()
 export class SerializeService {
   // Dates
+
   toIsoDate(date: Date): IsoDate {
-    return date.toISOString().slice(0, 10);
+    const year: string = String(date.getFullYear()).padStart(4, "0");
+    const month: string = String(date.getMonth() + 1).padStart(2, "0");
+    const day: string = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   }
 
   toIsoDateTime(date: Date): IsoDateTime {
