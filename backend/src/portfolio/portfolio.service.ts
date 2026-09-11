@@ -1,7 +1,6 @@
 import { Bar } from "@alpacahq/alpaca-trade-api";
 import { TransactionType } from "@prisma/client";
 import {
-  AssetHistory,
   clampToAvailable,
   fetchAssetHistory,
   fetchFirstBarOfDay,
@@ -21,6 +20,14 @@ import {
 } from "../lib/date.js";
 import { prisma } from "../lib/prisma.js";
 import { timeFrames, TimeFrameSpec } from "../lib/timeframe.js";
+import type {
+  HoldingStatus,
+  Order,
+  Orderbook,
+  Stats,
+  TransactionRequest,
+} from "../../../models/portfolio.d.ts";
+import type { AssetHistory } from "../../../models/history.d.ts";
 
 export class NotATradeDayError extends DateError {
   constructor(time: Date) {
@@ -30,37 +37,7 @@ export class NotATradeDayError extends DateError {
 
 export class HoldingError extends Error {}
 
-export type Order = {
-  name: string;
-  ticker: string;
-  transactionType: TransactionType;
-  time: Date;
-  shares_amount: number;
-};
-
-export type transactionOrder = {
-  ticker: string;
-  transactionType: TransactionType;
-  time: Date;
-  shares_amount: number;
-};
-
-export type Stats = {
-  ticker: string;
-  name: string;
-  shares: number;
-  invested_money: number;
-  // shares * live price, 0 once the position is closed
-  current_value: number;
-  realized_gains: number;
-  total_costs: number;
-  // (realized + unrealized) / cost basis of the window, a carried position costs its price at start
-  performance: number;
-};
-
-export type Orderbook = Order[];
-
-export async function processOrder(order: transactionOrder, userId: number): Promise<void> {
+export async function processOrder(order: TransactionRequest, userId: number): Promise<void> {
   // not on a tradeable day
   if (!(await isTradeDay(order.time))) {
     throw new NotATradeDayError(order.time);
@@ -183,8 +160,6 @@ export async function getHolding(
   }
   return holdings;
 }
-
-export type HoldingStatus = "active" | "inactive";
 
 export function getStocksByStatus(orderbook: Orderbook, status?: HoldingStatus): string[] {
   const shares: Map<string, number> = new Map();

@@ -1,23 +1,13 @@
-import { AppUser } from "@prisma/client";
 import {
   calculatePerformance,
   calculateStats,
   getLatestValidEnd,
   getOrderBook,
   getValidStart,
-  Orderbook,
-  Stats,
 } from "../portfolio/portfolio.service.js";
 import { getUserList } from "../user/user.service.js";
-
-export type LeaderboardEntry = {
-  user: Pick<AppUser, "id" | "name">;
-  total_costs: number;
-  total_gains: number;
-  performance: number;
-};
-
-export type Leaderboard = LeaderboardEntry[];
+import type { Orderbook, Stats } from "../../../models/portfolio.d.ts";
+import type { Leaderboard, LeaderboardEntry } from "../../../models/leaderboard.d.ts";
 
 /**
  * Retrieves the leaderboard of users based on their portfolio performance within a specified time frame.

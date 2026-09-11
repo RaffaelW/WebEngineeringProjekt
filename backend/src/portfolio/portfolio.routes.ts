@@ -1,22 +1,31 @@
 import { TransactionType } from "@prisma/client";
 import { Router } from "express";
 import z from "zod";
+import type { ApiMessage } from "../../../models/api.d.ts";
+import type {
+  TransactionRequest,
+  OrderbookQuery,
+  StatsQuery,
+  HoldingStatus,
+  HoldingsQuery,
+  PortfolioChartQuery,
+  Orderbook,
+  PortfolioBar,
+  Stats,
+} from "../../../models/portfolio.d.ts";
 import { requireAuth } from "../auth/auth.middleware.js";
-import { endOfDay, getLatestTradedDay, startOfDay } from "../lib/date.js";
+import { startOfDay, endOfDay, getLatestTradedDay } from "../lib/date.js";
 import { timeFrameKeys } from "../lib/timeframe.js";
-import { validate, validateQuery } from "../middleware/validation.middleware.js";
-import { calculatePortfolioChart, PortfolioBar } from "./chart.service.js";
+import { validateQuery, validate } from "../middleware/validation.middleware.js";
+import { calculatePortfolioChart } from "./chart.service.js";
 import {
-  calculateStats,
-  getLatestValidEnd,
   getOrderBook,
   getStocksByStatus,
-  getValidStart,
-  HoldingStatus,
-  Orderbook,
-  processOrder,
   setWantedTickers,
-  Stats,
+  getLatestValidEnd,
+  getValidStart,
+  calculateStats,
+  processOrder,
 } from "./portfolio.service.js";
 
 export const router = Router();
@@ -30,7 +39,7 @@ const portfolioSchema = z.object({
   transactionType: z.enum(TransactionType),
   shares_amount: z.int().positive(),
   time: z.iso.datetime().transform((s) => new Date(s)),
-});
+}) satisfies z.ZodType<TransactionRequest>;
 type PortfolioSchema = z.infer<typeof portfolioSchema>;
 
 const orderbookSchema = z
@@ -47,8 +56,8 @@ const orderbookSchema = z
   .refine((range) => !range.start || !range.end || range.start <= range.end, {
     message: "start must not be after end",
     path: ["start"],
-  });
-type OrderbookQuery = z.infer<typeof orderbookSchema>;
+  }) satisfies z.ZodType<OrderbookQuery>;
+type OrderbookSchema = z.infer<typeof orderbookSchema>;
 
 // comma separated list, absent means every ticker in the orderbook
 const statsSchema = z
@@ -82,14 +91,13 @@ const statsSchema = z
   .refine((range) => !range.start || !range.end || range.start <= range.end, {
     message: "start must not be after end",
     path: ["start"],
-  });
-type StatsQuery = z.infer<typeof statsSchema>;
+  }) satisfies z.ZodType<StatsQuery>;
 
 // absent means every ticker ever traded, held or already sold off
 const holdingsSchema = z.object({
-  status: z.enum(["active", "inactive"] satisfies readonly HoldingStatus[]).optional(),
-});
-type HoldingsQuery = z.infer<typeof holdingsSchema>;
+  status: z.enum(["active", "inactive"] satisfies HoldingStatus[]).optional(),
+}) satisfies z.ZodType<HoldingsQuery>;
+type HoldingsSchemaQuery = z.infer<typeof holdingsSchema>;
 
 // the window of the chart, neither bound has to be a trading day, bars align to their own grid
 const chartSchema = z
@@ -109,7 +117,7 @@ const chartSchema = z
   .refine((range) => !range.start || !range.end || range.start <= range.end, {
     message: "start must not be after end",
     path: ["start"],
-  });
+  }) satisfies z.ZodType<PortfolioChartQuery>;
 type ChartQuery = z.infer<typeof chartSchema>;
 
 /**
@@ -117,10 +125,10 @@ type ChartQuery = z.infer<typeof chartSchema>;
  * optionally limited to the given range, by default the whole orderbook
  */
 router.route("/orderbook").get(requireAuth, validateQuery(orderbookSchema), async (req, res) => {
-  const { start, end } = req.validatedQuery as OrderbookQuery;
+  const { start, end } = req.validatedQuery as OrderbookSchema;
 
   const orderbook: Orderbook = await getOrderBook(req.user!.id, start, end);
-  res.status(200).json(orderbook);
+  res.status(200).json(orderbook satisfies Orderbook);
 });
 
 /**
@@ -128,13 +136,13 @@ router.route("/orderbook").get(requireAuth, validateQuery(orderbookSchema), asyn
  * already sold off completely, without a status every ticker ever traded is returned
  */
 router.route("/holdings").get(requireAuth, validateQuery(holdingsSchema), async (req, res) => {
-  const { status } = req.validatedQuery as HoldingsQuery;
+  const { status } = req.validatedQuery as HoldingsSchemaQuery;
 
   // every order made in ascending order
   const orderbook: Orderbook = await getOrderBook(req.user!.id);
   const tickers: string[] = getStocksByStatus(orderbook, status);
 
-  res.status(200).json(tickers);
+  res.status(200).json(tickers satisfies string[]);
 });
 
 /**
@@ -159,7 +167,7 @@ router.route("/stats").get(requireAuth, validateQuery(statsSchema), async (req, 
 
   const stats: Stats[] = await calculateStats(orderbook, wanted, windowEnd, windowStart);
 
-  res.status(200).json(stats);
+  res.status(200).json(stats satisfies Stats[]);
 });
 
 /**
@@ -191,12 +199,12 @@ router.route("/chart").get(requireAuth, validateQuery(chartSchema), async (req, 
     windowEnd,
   );
 
-  res.status(200).json(bars);
+  res.status(200).json(bars satisfies PortfolioBar[]);
 });
 
 router.route("/transaction").post(requireAuth, validate(portfolioSchema), async (req, res) => {
   const order = req.body as PortfolioSchema;
 
   await processOrder(order, req.user!.id);
-  res.status(201).json({ message: "Transaction created" });
+  res.status(201).json({ message: "Transaction created" } satisfies ApiMessage);
 });

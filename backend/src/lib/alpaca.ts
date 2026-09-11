@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 
 import { getHistory } from "../history/history.service.js";
 import { endOfDay, startOfDay } from "./date.js";
+import type { AssetHistory } from "../../../models/history.d.ts";
 
 export type AlpacaAsset = trading.Assets;
 
@@ -14,16 +15,6 @@ export class TickerNotFoundError extends Error {
     super(`Asset with ticker ${ticker} does not exist`);
   }
 }
-
-export type AssetHistory = {
-  ticker: string;
-  time: Date;
-  high: number;
-  low: number;
-  open: number;
-  close: number;
-  volume: number;
-};
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(dirname, "..", "..", "..", ".env") });
