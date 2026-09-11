@@ -3,39 +3,42 @@ import { Router } from "express";
 import z from "zod";
 import type { ApiMessage } from "../../../models/api.d.ts";
 import type {
-  TransactionRequest,
-  OrderbookQuery,
-  StatsQuery,
   HoldingStatus,
   HoldingsQuery,
-  PortfolioChartQuery,
   Orderbook,
+  OrderbookQuery,
   PortfolioBar,
+  PortfolioChartQuery,
   Stats,
+  StatsQuery,
+  TransactionRequest,
 } from "../../../models/portfolio.d.ts";
 import { requireAuth } from "../auth/auth.middleware.js";
-import { startOfDay, endOfDay, getLatestTradedDay } from "../lib/date.js";
+import { endOfDay, getLatestTradedDay, startOfDay } from "../lib/date.js";
 import { timeFrameKeys } from "../lib/timeframe.js";
-import { validateQuery, validate } from "../middleware/validation.middleware.js";
+import {
+  endDateSchema,
+  requireStartBeforeEnd,
+  startBeforeEndError,
+  startDateSchema,
+  tickerSchema,
+} from "../lib/validation.js";
+import { validate, validateQuery } from "../middleware/validation.middleware.js";
 import { calculatePortfolioChart } from "./chart.service.js";
 import {
+  calculateStats,
+  getLatestValidEnd,
   getOrderBook,
   getStocksByStatus,
-  setWantedTickers,
-  getLatestValidEnd,
   getValidStart,
-  calculateStats,
   processOrder,
+  setWantedTickers,
 } from "./portfolio.service.js";
 
 export const router = Router();
 
 const portfolioSchema = z.object({
-  ticker: z
-    .string()
-    .min(1)
-    .max(10)
-    .transform((s: string) => s.toUpperCase()),
+  ticker: tickerSchema,
   transactionType: z.enum(TransactionType),
   shares_amount: z.int().positive(),
   time: z.iso.datetime().transform((s) => new Date(s)),
@@ -44,19 +47,10 @@ type PortfolioSchema = z.infer<typeof portfolioSchema>;
 
 const orderbookSchema = z
   .object({
-    start: z.iso
-      .date()
-      .transform((s: string) => startOfDay(new Date(s)))
-      .optional(),
-    end: z.iso
-      .date()
-      .transform((s: string) => endOfDay(new Date(s)))
-      .optional(),
+    start: startDateSchema,
+    end: endDateSchema,
   })
-  .refine((range) => !range.start || !range.end || range.start <= range.end, {
-    message: "start must not be after end",
-    path: ["start"],
-  }) satisfies z.ZodType<OrderbookQuery>;
+  .refine(requireStartBeforeEnd, startBeforeEndError) satisfies z.ZodType<OrderbookQuery>;
 type OrderbookSchema = z.infer<typeof orderbookSchema>;
 
 // comma separated list, absent means every ticker in the orderbook
@@ -75,23 +69,13 @@ const statsSchema = z
           .map((ticker: string) => ticker.trim().toUpperCase())
           .filter(Boolean);
       }),
+    // must be a trading day, absent means the performance is measured from the very first order
+    start: startDateSchema,
     // if not set the latest trading day is used, priced live while the market is open
     // and off that session's closing bar otherwise
-    end: z.iso
-      .date()
-      .optional()
-      .transform((s: string | undefined) => (s ? new Date(s) : undefined)),
-    // must be a trading day, absent means the performance is measured from the very first order
-    start: z.iso
-      .date()
-      .optional()
-      .transform((s: string | undefined) => (s ? new Date(s) : undefined)),
+    end: endDateSchema,
   })
-  // a reversed window would price the opening position after the day it is valued on
-  .refine((range) => !range.start || !range.end || range.start <= range.end, {
-    message: "start must not be after end",
-    path: ["start"],
-  }) satisfies z.ZodType<StatsQuery>;
+  .refine(requireStartBeforeEnd, startBeforeEndError) satisfies z.ZodType<StatsQuery>;
 
 // absent means every ticker ever traded, held or already sold off
 const holdingsSchema = z.object({
@@ -104,20 +88,11 @@ const chartSchema = z
   .object({
     timeframe: z.enum(timeFrameKeys),
     // absent means the day of the very first order
-    start: z.iso
-      .date()
-      .transform((s: string) => startOfDay(new Date(s)))
-      .optional(),
+    start: startDateSchema,
     // absent means the latest day that already produced market data
-    end: z.iso
-      .date()
-      .transform((s: string) => endOfDay(new Date(s)))
-      .optional(),
+    end: endDateSchema,
   })
-  .refine((range) => !range.start || !range.end || range.start <= range.end, {
-    message: "start must not be after end",
-    path: ["start"],
-  }) satisfies z.ZodType<PortfolioChartQuery>;
+  .refine(requireStartBeforeEnd, startBeforeEndError) satisfies z.ZodType<PortfolioChartQuery>;
 type ChartQuery = z.infer<typeof chartSchema>;
 
 /**
