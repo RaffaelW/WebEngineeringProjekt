@@ -303,7 +303,7 @@ export async function getLatestValidEnd(end: Date | undefined): Promise<Date> {
   }
 }
 
-/*
+/**
  * start of the window, a trading day so the position held there can be priced
  *
  * without a start the window covers the whole history, nothing is ever carried into it
