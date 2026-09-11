@@ -49,8 +49,8 @@ export class SerializeService {
   toRawHistoryQuery(query: HistoryQuery): RawHistoryQuery {
     return {
       ticker: query.ticker,
-      start: this.toIsoDate(query.start),
-      end: this.toIsoDate(query.end),
+      start: this.toOptionalIsoDate(query.start),
+      end: this.toOptionalIsoDate(query.end),
       timeframe: query.timeframe,
     };
   }

@@ -5,6 +5,7 @@ import { TimeFrameSpec, timeFrames } from "../lib/timeframe.js";
 import { Bar } from "@alpacahq/alpaca-trade-api";
 import { cacheBars, checkCoverage } from "../lib/database.js";
 import type { AssetHistory, TimeFrameKey } from "../../../models/history.d.ts";
+import type { HistoryWindow } from "../models/history.d.ts";
 
 export class RangeError extends Error {
   constructor(start: Date, end: Date, timeframe: TimeFrameKey, violation: "small" | "large") {
@@ -29,6 +30,25 @@ function validateTimeFrameByTimeSpan(timeframe: TimeFrameKey, start: Date, end: 
   if (range > spec.max) {
     throw new RangeError(start, end, timeframe, "large");
   }
+}
+
+/**
+ * Fills in the missing bounds of a history query:
+ * a missing end means now
+ * a missing start means as far back as the timeframe allows from end
+ * Given bounds are passed through untouched.
+ */
+export function resolveHistoryWindow(
+  timeframe: TimeFrameKey,
+  start: Date | undefined,
+  end: Date | undefined,
+): HistoryWindow {
+  const spec: TimeFrameSpec = timeFrames[timeframe];
+  const windowEnd: Date = end ?? new Date();
+  const earliestStart: Date =
+    spec.max === Infinity ? new Date(0) : new Date(windowEnd.getTime() - spec.max);
+
+  return { start: start ?? earliestStart, end: windowEnd };
 }
 
 /**
