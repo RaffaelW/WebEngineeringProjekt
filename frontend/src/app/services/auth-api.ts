@@ -1,4 +1,33 @@
-import { Service } from "@angular/core";
+import { HttpClient } from "@angular/common/http";
+import { inject, Service } from "@angular/core";
+import { Observable } from "rxjs";
+import type { ApiMessage } from "../../../../models/api";
+import type { AuthCredentials, SessionUser } from "../../../../models/auth";
+import { API_BASE_URL } from "./api";
 
+// Calls the /api/auth routes. Auth models carry no dates, so no serialization is needed.
 @Service()
-export class AuthApi {}
+export class AuthApi {
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = `${API_BASE_URL}/auth`;
+
+  /** GET /api/auth/session — the signed in user, 401 if not signed in */
+  getSession(): Observable<SessionUser> {
+    return this.http.get<SessionUser>(`${this.baseUrl}/session`);
+  }
+
+  /** POST /api/auth/register — 201 on success, 409 if the name is taken */
+  register(credentials: AuthCredentials): Observable<ApiMessage> {
+    return this.http.post<ApiMessage>(`${this.baseUrl}/register`, credentials);
+  }
+
+  /** POST /api/auth/session — sets the auth cookie, 401 on invalid credentials */
+  login(credentials: AuthCredentials): Observable<ApiMessage> {
+    return this.http.post<ApiMessage>(`${this.baseUrl}/session`, credentials);
+  }
+
+  /** DELETE /api/auth/session — clears the auth cookie */
+  logout(): Observable<ApiMessage> {
+    return this.http.delete<ApiMessage>(`${this.baseUrl}/session`);
+  }
+}
