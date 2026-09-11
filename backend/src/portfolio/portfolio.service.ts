@@ -371,18 +371,9 @@ export async function calculateStats(
   const promises: Promise<Stats | undefined>[] = tickers.map(async (ticker) => {
     const holding: Holding | undefined = holdings.get(ticker);
 
-    // if user never held that ticker return a stats object with 0 values, instead of throwing an error
+    // if user never held that ticker return undefined, instead of throwing an error
     if (!holding) {
-      return {
-        ticker,
-        name: "",
-        shares: 0,
-        invested_money: 0,
-        current_value: 0,
-        realized_gains: 0,
-        total_costs: 0,
-        performance: 0,
-      };
+      return undefined;
     }
 
     // price is determined by the end of the day, or live if the market is open and the position is still held
