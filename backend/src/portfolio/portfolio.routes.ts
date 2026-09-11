@@ -37,11 +37,17 @@ import {
 
 export const router = Router();
 
+const FUTURE_TOLERANCE = 1000 * 5; // 5 seconds, client/server clock drift
 const portfolioSchema = z.object({
   ticker: tickerSchema,
   transactionType: z.enum(TransactionType),
   shares_amount: z.int().positive(),
-  time: z.iso.datetime().transform((s) => new Date(s)),
+  time: z.iso
+    .datetime()
+    .transform((s) => new Date(s))
+    .refine((time) => time.getTime() <= Date.now() + FUTURE_TOLERANCE, {
+      message: "time cannot be in the future",
+    }),
 }) satisfies z.ZodType<TransactionRequest>;
 type PortfolioSchema = z.infer<typeof portfolioSchema>;
 
