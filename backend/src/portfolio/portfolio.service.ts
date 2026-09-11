@@ -1,5 +1,13 @@
 import { Bar } from "@alpacahq/alpaca-trade-api";
 import { TransactionType } from "@prisma/client";
+import type { AssetHistory } from "../../../models/history.d.ts";
+import type {
+  HoldingStatus,
+  Order,
+  Orderbook,
+  Stats,
+  TransactionRequest,
+} from "../../../models/portfolio.d.ts";
 import {
   clampToAvailable,
   fetchAssetHistory,
@@ -20,14 +28,6 @@ import {
 } from "../lib/date.js";
 import { prisma } from "../lib/prisma.js";
 import { timeFrames, TimeFrameSpec } from "../lib/timeframe.js";
-import type {
-  HoldingStatus,
-  Order,
-  Orderbook,
-  Stats,
-  TransactionRequest,
-} from "../../../models/portfolio.d.ts";
-import type { AssetHistory } from "../../../models/history.d.ts";
 
 export class NotATradeDayError extends DateError {
   constructor(time: Date) {
@@ -55,16 +55,18 @@ export async function processOrder(order: TransactionRequest, userId: number): P
   // test if data available at specific time or at least 60min before, if not Error
   await getApproxBarAt(order.ticker, order.time);
 
-  // get all current holdings
-  const orderbook: Orderbook = await getOrderBook(userId);
-  const holdings: Map<string, Holding> = await getHolding(orderbook);
+  if (order.transactionType === "sell") {
+    // get all current holdings
+    const orderbook: Orderbook = await getOrderBook(userId);
+    const holdings: Map<string, Holding> = await getHolding(orderbook);
 
-  // can only sell as many shares as the user owns, a ticker never held counts as zero.
-  const sharesHeld: number = holdings.get(order.ticker)?.shares ?? 0;
-  if (order.transactionType === "sell" && sharesHeld < order.shares_amount) {
-    throw new HoldingError(
-      `Cannot sell ${order.shares_amount} shares of ${order.ticker}, only ${sharesHeld} held`,
-    );
+    // can only sell as many shares as the user owns, a ticker never held counts as zero.
+    const sharesHeld: number = holdings.get(order.ticker)?.shares ?? 0;
+    if (sharesHeld < order.shares_amount) {
+      throw new HoldingError(
+        `Cannot sell ${order.shares_amount} shares of ${order.ticker}, only ${sharesHeld} held`,
+      );
+    }
   }
 
   await prisma.portfolioTransaction.create({
