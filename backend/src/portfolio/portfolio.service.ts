@@ -75,6 +75,9 @@ export async function processOrder(order: transactionOrder, userId: number): Pro
     throw new TickerNotFoundError(order.ticker);
   }
 
+  // test if data available at specific time or at least 60min before, if not Error
+  await getApproxBarAt(order.ticker, order.time);
+
   // get all current holdings
   const orderbook: Orderbook = await getOrderBook(userId);
   const holdings: Map<string, Holding> = await getHolding(orderbook);
