@@ -43,7 +43,7 @@ model PortfolioTransaction {
   transactionType TransactionType @map("transaction_type")
   time            DateTime
   shares_amount   Int
-  appUser         AppUser         @relation(fields: [appUserId], references: [id])
+  appUser         AppUser         @relation(fields: [appUserId], references: [id], onDelete: Cascade)
   asset           Asset           @relation(fields: [assetId], references: [id])
 
   @@map("portfolio-transaction")

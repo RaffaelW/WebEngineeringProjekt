@@ -4,5 +4,5 @@ tsconfig.build.json can only include ts files under rootDir (./src)
 */
 {
   "extends": "../tsconfig.base.json",
-  "include": ["src/**/*.ts", "prisma.config.ts"]
+  "include": ["src/**/*.ts", "prisma.config.ts", "prisma/seed.ts"]
 }
