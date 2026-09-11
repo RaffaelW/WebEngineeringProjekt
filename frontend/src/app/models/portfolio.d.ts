@@ -1,43 +1,38 @@
-import type { TimeFrameKey } from "../../../../models/history.d.ts";
-import type { TransactionType } from "../../../../models/portfolio.d.ts";
+import type {
+  Order,
+  OrderbookQuery,
+  PortfolioBar,
+  PortfolioChartQuery,
+  StatsQuery,
+  TransactionRequest,
+} from "../../../../models/portfolio.d.ts";
 import type { IsoDate, IsoDateTime } from "./api.d.ts";
 
-export interface RawOrderbookQuery {
+export interface RawOrderbookQuery extends Omit<OrderbookQuery, "start" | "end"> {
   start?: IsoDate;
   end?: IsoDate;
 }
 
-export interface RawOrder {
-  name: string;
-  ticker: string;
-  transactionType: TransactionType;
+export interface RawOrder extends Omit<Order, "time"> {
   time: IsoDateTime;
-  shares_amount: number;
 }
 
-export interface RawStatsQuery {
+export interface RawStatsQuery extends Omit<StatsQuery, "tickers" | "start" | "end"> {
   // comma separated, the backend splits it
   tickers?: string;
   start?: IsoDate;
   end?: IsoDate;
 }
 
-export interface RawPortfolioChartQuery {
-  timeframe: TimeFrameKey;
+export interface RawPortfolioChartQuery extends Omit<PortfolioChartQuery, "start" | "end"> {
   start?: IsoDate;
   end?: IsoDate;
 }
 
-export interface RawPortfolioBar {
+export interface RawPortfolioBar extends Omit<PortfolioBar, "time"> {
   time: IsoDateTime;
-  value: number;
-  gain: number;
-  invested: number;
 }
 
-export interface RawTransactionRequest {
-  ticker: string;
-  transactionType: TransactionType;
-  shares_amount: number;
+export interface RawTransactionRequest extends Omit<TransactionRequest, "time"> {
   time: IsoDateTime;
 }

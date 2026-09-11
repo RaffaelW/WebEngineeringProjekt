@@ -1,19 +1,11 @@
-import type { TimeFrameKey } from "../../../../models/history.d.ts";
+import type { AssetHistory, HistoryQuery } from "../../../../models/history.d.ts";
 import type { IsoDate, IsoDateTime } from "./api.d.ts";
 
-export interface RawHistoryQuery {
-  ticker: string;
+export interface RawHistoryQuery extends Omit<HistoryQuery, "start" | "end"> {
   start: IsoDate;
   end: IsoDate;
-  timeframe: TimeFrameKey;
 }
 
-export interface RawAssetHistory {
-  ticker: string;
+export interface RawAssetHistory extends Omit<AssetHistory, "time"> {
   time: IsoDateTime;
-  high: number;
-  low: number;
-  open: number;
-  close: number;
-  volume: number;
 }
