@@ -1,7 +1,7 @@
+import { TransactionRequest } from "../../models/portfolio.js";
 import { populateAssetTable } from "../src/asset/asset.service.js";
 import { registerUser } from "../src/auth/auth.service.js";
 import { prisma } from "../src/lib/prisma.js";
-import type { transactionOrder } from "../src/portfolio/portfolio.service.js";
 import { processOrder } from "../src/portfolio/portfolio.service.js";
 
 /**
@@ -277,9 +277,9 @@ const orders = [
  * are split into waves: each wave contains only orders for distinct tickers and
  * runs in parallel, the waves themselves run sequentially.
  */
-async function processUserOrders(userId: number, orders: transactionOrder[]): Promise<void> {
+async function processUserOrders(userId: number, orders: TransactionRequest[]): Promise<void> {
   const nextWaveByIdTicker: Map<string, number> = new Map();
-  const waves: transactionOrder[][] = [];
+  const waves: TransactionRequest[][] = [];
 
   for (const order of orders) {
     const waveNumber: number = (nextWaveByIdTicker.get(order.ticker) ?? 0) + 1;
@@ -288,7 +288,7 @@ async function processUserOrders(userId: number, orders: transactionOrder[]): Pr
   }
 
   for (const wave of waves) {
-    await Promise.all(wave.map((order: transactionOrder) => processOrder(order, userId)));
+    await Promise.all(wave.map((order) => processOrder(order, userId)));
   }
 }
 
