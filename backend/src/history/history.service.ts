@@ -4,7 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import { TimeFrameSpec, timeFrames } from "../lib/timeframe.js";
 import { Bar } from "@alpacahq/alpaca-trade-api";
 import { cacheBars, checkCoverage } from "../lib/database.js";
-import type { AssetHistory, TimeFrameKey } from "../../../models/history.js";
+import type { AssetHistory, TimeFrameKey } from "../../../models/history.d.ts";
 
 export class RangeError extends Error {
   constructor(start: Date, end: Date, timeframe: TimeFrameKey, violation: "small" | "large") {

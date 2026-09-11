@@ -1,8 +1,8 @@
 import { HttpClient } from "@angular/common/http";
 import { inject, Service } from "@angular/core";
 import { map, Observable } from "rxjs";
-import type { AssetHistory, HistoryQuery } from "../../../../models/history";
-import type { RawAssetHistory } from "../models/history";
+import type { AssetHistory, HistoryQuery } from "../../../../models/history.d.ts";
+import type { RawAssetHistory } from "../models/history.d.ts";
 import { SerializeService } from "../serialize-service";
 import { API_BASE_URL, toHttpParams } from "./api";
 

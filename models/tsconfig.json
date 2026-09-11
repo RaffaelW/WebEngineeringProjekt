@@ -1,6 +1,6 @@
 /*
-The shared API contract, imported by both workspaces. Type only, so nothing is
-ever emitted from here — this project exists so tooling (ESLint's projectService,
+The shared API contract, imported by both workspaces. Type only (.d.ts files),
+so nothing is ever emitted from here — this project exists so tooling (ESLint's projectService,
 editors) has a tsconfig.json that owns these files.
 */
 {

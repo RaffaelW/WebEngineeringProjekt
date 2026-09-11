@@ -2,7 +2,7 @@
  * GET /api/leaderboard
  */
 
-import type { SessionUser } from "./auth.js";
+import type { SessionUser } from "./auth.d.ts";
 
 export interface LeaderboardQuery {
   start?: Date;

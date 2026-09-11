@@ -5,8 +5,8 @@ import { validate } from "../middleware/validation.middleware.js";
 import { getUserByName } from "../user/user.service.js";
 import { authCookieName, requireAuth } from "./auth.middleware.js";
 import { generateAuthToken, registerUser, verifyUser } from "./auth.service.js";
-import type { AuthCredentials, SessionUser } from "../../../models/auth.js";
-import type { ApiMessage } from "../../../models/api.js";
+import type { AuthCredentials, SessionUser } from "../../../models/auth.d.ts";
+import type { ApiMessage } from "../../../models/api.d.ts";
 
 export const router = Router();
 

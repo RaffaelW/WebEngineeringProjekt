@@ -3,7 +3,7 @@ import z from "zod";
 import { endOfDay, startOfDay } from "../lib/date.js";
 import { validateQuery } from "../middleware/validation.middleware.js";
 import { getLeaderboard } from "./leaderboard.service.js";
-import type { Leaderboard, LeaderboardQuery } from "../../../models/leaderboard.js";
+import type { Leaderboard, LeaderboardQuery } from "../../../models/leaderboard.d.ts";
 
 export const router = Router();
 

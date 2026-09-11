@@ -5,7 +5,7 @@
  * The Serialize service converts between these and the shared models.
  */
 
-/** Calendar day, `YYYY-MM-DD`. What every `start` / `end` query bound expects. */
+/** Calendar day, `YYYY-MM-DD`. */
 export type IsoDate = string;
 
 /** Full ISO timestamp. */

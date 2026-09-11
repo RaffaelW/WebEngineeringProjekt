@@ -3,7 +3,7 @@ import z from "zod";
 import { requireAuth } from "../auth/auth.middleware.js";
 import { getAutoCompleteData } from "./asset.service.js";
 import { validateQuery } from "../middleware/validation.middleware.js";
-import type { AutocompleteAsset, AutocompleteQuery } from "../../../models/asset.js";
+import type { AutocompleteAsset, AutocompleteQuery } from "../../../models/asset.d.ts";
 
 export const router = Router();
 

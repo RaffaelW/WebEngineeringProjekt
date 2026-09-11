@@ -1,6 +1,6 @@
-import type { TimeFrameKey } from "../../../../models/history";
-import type { TransactionType } from "../../../../models/portfolio";
-import type { IsoDate, IsoDateTime } from "./api";
+import type { TimeFrameKey } from "../../../../models/history.d.ts";
+import type { TransactionType } from "../../../../models/portfolio.d.ts";
+import type { IsoDate, IsoDateTime } from "./api.d.ts";
 
 export interface RawOrderbookQuery {
   start?: IsoDate;

@@ -1,8 +1,8 @@
 import { HttpClient } from "@angular/common/http";
 import { inject, Service } from "@angular/core";
 import { Observable } from "rxjs";
-import type { ApiMessage } from "../../../../models/api";
-import type { AuthCredentials, SessionUser } from "../../../../models/auth";
+import type { ApiMessage } from "../../../../models/api.d.ts";
+import type { AuthCredentials, SessionUser } from "../../../../models/auth.d.ts";
 import { API_BASE_URL } from "./api";
 
 // Calls the /api/auth routes. Auth models carry no dates, so no serialization is needed.

@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { getUserById } from "../user/user.service.js";
 import { readAuthToken } from "./auth.service.js";
-import type { ApiMessage } from "../../../models/api.js";
+import type { ApiMessage } from "../../../models/api.d.ts";
 
 export const authCookieName = "user";
 

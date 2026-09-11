@@ -2,7 +2,7 @@ import { Router } from "express";
 import z from "zod";
 import { requireAuth } from "../auth/auth.middleware.js";
 import { endOfDay, startOfDay } from "../lib/date.js";
-import type { AssetHistory } from "../../../models/history.js";
+import type { AssetHistory } from "../../../models/history.d.ts";
 import { timeFrameKeys } from "../lib/timeframe.js";
 import { validateQuery } from "../middleware/validation.middleware.js";
 import { getHistory } from "./history.service.js";

@@ -1,6 +1,6 @@
 import { TimeFrame } from "@prisma/client";
 import { values } from "@alpacahq/alpaca-trade-api";
-import type { TimeFrameKey } from "../../../models/history.js";
+import type { TimeFrameKey } from "../../../models/history.d.ts";
 
 const msPerMinute: number = 60 * 1000;
 const msPerHour: number = 60 * msPerMinute;

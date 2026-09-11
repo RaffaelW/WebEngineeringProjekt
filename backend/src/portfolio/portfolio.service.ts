@@ -1,7 +1,6 @@
 import { Bar } from "@alpacahq/alpaca-trade-api";
 import { TransactionType } from "@prisma/client";
 import {
-  AssetHistory,
   clampToAvailable,
   fetchAssetHistory,
   fetchFirstBarOfDay,
@@ -27,7 +26,8 @@ import type {
   Orderbook,
   Stats,
   TransactionRequest,
-} from "../../../models/portfolio.js";
+} from "../../../models/portfolio.d.ts";
+import type { AssetHistory } from "../../../models/history.d.ts";
 
 export class NotATradeDayError extends DateError {
   constructor(time: Date) {

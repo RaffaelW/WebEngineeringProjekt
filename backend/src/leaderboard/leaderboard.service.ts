@@ -6,8 +6,8 @@ import {
   getValidStart,
 } from "../portfolio/portfolio.service.js";
 import { getUserList } from "../user/user.service.js";
-import type { Orderbook, Stats } from "../../../models/portfolio.js";
-import type { Leaderboard, LeaderboardEntry } from "../../../models/leaderboard.js";
+import type { Orderbook, Stats } from "../../../models/portfolio.d.ts";
+import type { Leaderboard, LeaderboardEntry } from "../../../models/leaderboard.d.ts";
 
 /**
  * Retrieves the leaderboard of users based on their portfolio performance within a specified time frame.

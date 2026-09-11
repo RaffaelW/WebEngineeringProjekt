@@ -1,7 +1,7 @@
 import { HttpClient } from "@angular/common/http";
 import { inject, Service } from "@angular/core";
 import { Observable } from "rxjs";
-import type { AutocompleteAsset, AutocompleteQuery } from "../../../../models/asset";
+import type { AutocompleteAsset, AutocompleteQuery } from "../../../../models/asset.d.ts";
 import { API_BASE_URL, toHttpParams } from "./api";
 
 @Service()

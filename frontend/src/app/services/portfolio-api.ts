@@ -1,7 +1,7 @@
 import { HttpClient } from "@angular/common/http";
 import { inject, Service } from "@angular/core";
 import { map, Observable } from "rxjs";
-import type { ApiMessage } from "../../../../models/api";
+import type { ApiMessage } from "../../../../models/api.d.ts";
 import type {
   HoldingsQuery,
   Orderbook,
@@ -11,8 +11,8 @@ import type {
   Stats,
   StatsQuery,
   TransactionRequest,
-} from "../../../../models/portfolio";
-import type { RawOrder, RawPortfolioBar } from "../models/portfolio";
+} from "../../../../models/portfolio.d.ts";
+import type { RawOrder, RawPortfolioBar } from "../models/portfolio.d.ts";
 import { SerializeService } from "../serialize-service";
 import { API_BASE_URL, toHttpParams } from "./api";
 

@@ -1,7 +1,7 @@
 import { getHistory } from "../history/history.service.js";
 import { getHolding, Holding } from "./portfolio.service.js";
-import type { AssetHistory, TimeFrameKey } from "../../../models/history.js";
-import type { Orderbook, PortfolioBar } from "../../../models/portfolio.js";
+import type { AssetHistory, TimeFrameKey } from "../../../models/history.d.ts";
+import type { Orderbook, PortfolioBar } from "../../../models/portfolio.d.ts";
 
 /**
  * every ticker priced on the shared timeline, gaps filled so a sum never silently drops a holding

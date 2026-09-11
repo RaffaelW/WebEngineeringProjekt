@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 
 import { getHistory } from "../history/history.service.js";
 import { endOfDay, startOfDay } from "./date.js";
-import { AssetHistory } from "../../../models/history.js";
+import type { AssetHistory } from "../../../models/history.d.ts";
 
 export type AlpacaAsset = trading.Assets;
 

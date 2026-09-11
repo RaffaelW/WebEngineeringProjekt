@@ -85,8 +85,10 @@ pre-commit run --all-files
 
 `models/` holds every type the two sides use to talk to each other, so a change
 to the contract is a compile error on both ends instead of a runtime surprise.
-It is **types only** — unions are `type` aliases, request and response objects
-are `interface`s, and nothing in it emits code.
+It is **types only** — the files are `.d.ts`, unions are `type` aliases, request
+and response objects are `interface`s, and nothing in it emits code. Import
+them with the explicit path (`…/models/api.d.ts`) and always as `import type` —
+TypeScript refuses a plain `import` of a declaration file.
 
 Date fields in the shared models are `Date`, never ISO strings — the models
 describe the _deserialized_ shape. Each side reaches it differently:

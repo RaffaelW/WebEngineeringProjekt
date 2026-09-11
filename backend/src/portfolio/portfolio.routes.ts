@@ -1,8 +1,8 @@
 import { TransactionType } from "@prisma/client";
 import { Router } from "express";
 import z from "zod";
-import { ApiMessage } from "../../../models/api.js";
-import {
+import type { ApiMessage } from "../../../models/api.d.ts";
+import type {
   TransactionRequest,
   OrderbookQuery,
   StatsQuery,
@@ -12,7 +12,7 @@ import {
   Orderbook,
   PortfolioBar,
   Stats,
-} from "../../../models/portfolio.js";
+} from "../../../models/portfolio.d.ts";
 import { requireAuth } from "../auth/auth.middleware.js";
 import { startOfDay, endOfDay, getLatestTradedDay } from "../lib/date.js";
 import { timeFrameKeys } from "../lib/timeframe.js";

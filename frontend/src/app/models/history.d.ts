@@ -1,5 +1,5 @@
-import type { TimeFrameKey } from "../../../../models/history";
-import type { IsoDate, IsoDateTime } from "./api";
+import type { TimeFrameKey } from "../../../../models/history.d.ts";
+import type { IsoDate, IsoDateTime } from "./api.d.ts";
 
 export interface RawHistoryQuery {
   ticker: string;

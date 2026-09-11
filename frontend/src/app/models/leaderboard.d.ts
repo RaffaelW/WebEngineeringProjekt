@@ -1,4 +1,4 @@
-import type { IsoDate } from "./api";
+import type { IsoDate } from "./api.d.ts";
 
 export interface RawLeaderboardQuery {
   start?: IsoDate;
