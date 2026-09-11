@@ -1,13 +1,8 @@
 import { AlpacaAsset, fetchAssets } from "../lib/alpaca.js";
 import { prisma } from "../lib/prisma.js";
+import type { AutocompleteAsset } from "../../../models/asset.d.ts";
 
-export interface AutoCompleteType {
-  name: string;
-  ticker: string;
-  exchange: string;
-}
-
-export async function getAutoCompleteData(name: string): Promise<AutoCompleteType[]> {
+export async function getAutoCompleteData(name: string): Promise<AutocompleteAsset[]> {
   return await prisma.asset.findMany({
     where: { name: { contains: name, mode: "insensitive" } },
     select: { name: true, ticker: true, exchange: true },

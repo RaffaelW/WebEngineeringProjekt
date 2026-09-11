@@ -3,6 +3,7 @@ import z from "zod";
 import { endOfDay, startOfDay } from "../lib/date.js";
 import { validateQuery } from "../middleware/validation.middleware.js";
 import { getLeaderboard } from "./leaderboard.service.js";
+import type { Leaderboard, LeaderboardQuery } from "../../../models/leaderboard.d.ts";
 
 export const router = Router();
 
@@ -20,12 +21,10 @@ const schema = z
   .refine((range) => !range.start || !range.end || range.start <= range.end, {
     message: "start must not be after end",
     path: ["start"],
-  });
-
+  }) satisfies z.ZodType<LeaderboardQuery>;
 type Schema = z.infer<typeof schema>;
-
 router.route("/").get(validateQuery(schema), async (req, res) => {
   const { start, end } = req.validatedQuery as Schema;
-  const leaderboard = await getLeaderboard(start, end);
-  res.json(leaderboard);
+  const leaderboard: Leaderboard = await getLeaderboard(start, end);
+  res.json(leaderboard satisfies Leaderboard);
 });
