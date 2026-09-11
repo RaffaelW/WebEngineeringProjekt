@@ -79,3 +79,26 @@ pre-commit run --all-files
 
 - `frontend/` — Angular 22 app (standalone components, SCSS)
 - `backend/` — Express server (ESM, TypeScript)
+- `models/` — shared API contract, imported by both
+
+### Shared models
+
+`models/` holds every type the two sides use to talk to each other, so a change
+to the contract is a compile error on both ends instead of a runtime surprise.
+It is **types only** — the files are `.d.ts`, unions are `type` aliases, request
+and response objects are `interface`s, and nothing in it emits code. Import
+them with the explicit path (`…/models/api.d.ts`) and always as `import type` —
+TypeScript refuses a plain `import` of a declaration file.
+
+Date fields in the shared models are `Date`, never ISO strings — the models
+describe the _deserialized_ shape. Each side reaches it differently:
+
+- **backend** — the Zod schemas already transform ISO strings into `Date`, so a
+  parsed request is the shared shape as-is. Each schema is pinned to its model
+  with `satisfies z.ZodType<…>`, which fails the build if the two drift apart.
+- **frontend** — `frontend/src/app/models/` holds the raw wire shapes (`Raw*`,
+  with ISO strings) for the endpoints that carry a date, and the `Serialize`
+  service converts between those and the shared models. Everything above that
+  service works only with shared models.
+
+Because `models/` sits above both workspaces, `backend/tsconfig.build.json` spans the repo root.

@@ -2,6 +2,7 @@ import { Router } from "express";
 import z from "zod";
 import { requireAuth } from "../auth/auth.middleware.js";
 import { endOfDay, startOfDay } from "../lib/date.js";
+import type { AssetHistory } from "../../../models/history.d.ts";
 import { timeFrameKeys } from "../lib/timeframe.js";
 import { validateQuery } from "../middleware/validation.middleware.js";
 import { getHistory } from "./history.service.js";
@@ -22,6 +23,6 @@ type HistoryQuery = z.infer<typeof historySchema>;
 
 router.route("/").get(requireAuth, validateQuery(historySchema), async (req, res) => {
   const { ticker, start, end, timeframe } = req.validatedQuery as HistoryQuery;
-  const bars = await getHistory(ticker, timeframe, start, end);
-  res.status(200).json(bars);
+  const bars: AssetHistory[] = await getHistory(ticker, timeframe, start, end);
+  res.status(200).json(bars satisfies AssetHistory[]);
 });
