@@ -56,8 +56,8 @@ export async function processOrder(order: TransactionRequest, userId: number): P
   await getApproxBarAt(order.ticker, order.time);
 
   if (order.transactionType === "sell") {
-    // get all current holdings
-    const orderbook: Orderbook = await getOrderBook(userId);
+    // get all holdings up to the time of the order
+    const orderbook: Orderbook = await getOrderBook(userId, undefined, order.time);
     const holdings: Map<string, Holding> = await getHolding(orderbook);
 
     // can only sell as many shares as the user owns, a ticker never held counts as zero.
