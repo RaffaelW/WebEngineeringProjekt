@@ -294,7 +294,7 @@ async function processUserOrders(userId: number, orders: TransactionRequest[]): 
 
 async function main() {
   const indices = [1, 2, 3, 4];
-  const demoUsers = indices.map((i) => ({ name: `User ${i}`, password: `user${i}` }));
+  const demoUsers = indices.map((i) => ({ name: `User ${i}`, password: `finanzvisu` }));
   const demoUserNames = demoUsers.map((user) => user.name);
 
   // Remove any demo data left by a previous or failed run, so the seed can be re-run

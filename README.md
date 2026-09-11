@@ -37,12 +37,12 @@ PostgreSQL 17 (Docker) with Prisma as ORM and migration tool.
 
 After starting the server, you can log in with the seeded demo users:
 
-| User   | Password | Portfolio                                    |
-| ------ | -------- | -------------------------------------------- |
-| User 1 | user1    | Diversified tech investor                    |
-| User 2 | user2    | Concentrated position, later diversified     |
-| User 3 | user3    | Active trader, opens and closes positions    |
-| User 4 | user4    | Long-term holder, trims and closes positions |
+| User   | Password   | Portfolio                                    |
+| ------ | ---------- | -------------------------------------------- |
+| User 1 | finanzvisu | Diversified tech investor                    |
+| User 2 | finanzvisu | Concentrated position, later diversified     |
+| User 3 | finanzvisu | Active trader, opens and closes positions    |
+| User 4 | finanzvisu | Long-term holder, trims and closes positions |
 
 ## Available Scripts
 
