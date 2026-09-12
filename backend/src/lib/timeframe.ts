@@ -1,5 +1,5 @@
-import { TimeFrame } from "@prisma/client";
 import { values } from "@alpacahq/alpaca-trade-api";
+import { TimeFrame } from "@prisma/client";
 import type { TimeFrameKey } from "../../../models/history.d.ts";
 
 const msPerMinute: number = 60 * 1000;
@@ -13,7 +13,9 @@ export type TimeFrameSpec = {
   max: number;
 };
 
-// Single source of truth for everything a timeframe implies
+/**
+ * Single source of truth for everything a timeframe implies
+ */
 export const timeFrames: Record<TimeFrameKey, TimeFrameSpec> = {
   "1min": {
     alpaca: values.TimeFrame.Minute,

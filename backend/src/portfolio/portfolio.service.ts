@@ -1,5 +1,13 @@
 import { Bar } from "@alpacahq/alpaca-trade-api";
 import { TransactionType } from "@prisma/client";
+import type { AssetHistory } from "../../../models/history.d.ts";
+import type {
+  HoldingStatus,
+  Order,
+  Orderbook,
+  Stats,
+  TransactionRequest,
+} from "../../../models/portfolio.d.ts";
 import {
   clampToAvailable,
   fetchAssetHistory,
@@ -20,14 +28,6 @@ import {
 } from "../lib/date.js";
 import { prisma } from "../lib/prisma.js";
 import { timeFrames, TimeFrameSpec } from "../lib/timeframe.js";
-import type {
-  HoldingStatus,
-  Order,
-  Orderbook,
-  Stats,
-  TransactionRequest,
-} from "../../../models/portfolio.d.ts";
-import type { AssetHistory } from "../../../models/history.d.ts";
 
 export class NotATradeDayError extends DateError {
   constructor(time: Date) {
@@ -55,16 +55,18 @@ export async function processOrder(order: TransactionRequest, userId: number): P
   // test if data available at specific time or at least 60min before, if not Error
   await getApproxBarAt(order.ticker, order.time);
 
-  // get all current holdings
-  const orderbook: Orderbook = await getOrderBook(userId);
-  const holdings: Map<string, Holding> = await getHolding(orderbook);
+  if (order.transactionType === "sell") {
+    // get all holdings up to the time of the order
+    const orderbook: Orderbook = await getOrderBook(userId, undefined, order.time);
+    const holdings: Map<string, Holding> = await getHolding(orderbook);
 
-  // can only sell as many shares as the user owns, a ticker never held counts as zero.
-  const sharesHeld: number = holdings.get(order.ticker)?.shares ?? 0;
-  if (order.transactionType === "sell" && sharesHeld < order.shares_amount) {
-    throw new HoldingError(
-      `Cannot sell ${order.shares_amount} shares of ${order.ticker}, only ${sharesHeld} held`,
-    );
+    // can only sell as many shares as the user owns, a ticker never held counts as zero.
+    const sharesHeld: number = holdings.get(order.ticker)?.shares ?? 0;
+    if (sharesHeld < order.shares_amount) {
+      throw new HoldingError(
+        `Cannot sell ${order.shares_amount} shares of ${order.ticker}, only ${sharesHeld} held`,
+      );
+    }
   }
 
   await prisma.portfolioTransaction.create({
@@ -292,16 +294,14 @@ export function setWantedTickers(orderbook: Orderbook, tickers: string[] | undef
   return wanted;
 }
 
-// return end itself, or without one the latest day that already has market data
+/**
+ * return end itself, or without one the latest day that already has market data
+ */
 export async function getLatestValidEnd(end: Date | undefined): Promise<Date> {
-  if (end && !(await isTradeDay(end))) {
-    throw new NotATradeDayError(end);
-  } else {
-    return end ? endOfDay(end) : endOfDay(await getLatestTradedDay(new Date()));
-  }
+  return endOfDay(await getLatestTradedDay(end ?? new Date()));
 }
 
-/*
+/**
  * start of the window, a trading day so the position held there can be priced
  *
  * without a start the window covers the whole history, nothing is ever carried into it
@@ -318,7 +318,9 @@ export async function getValidStart(start: Date | undefined): Promise<Date> {
   return startOfDay(start);
 }
 
-// calculate a number of statistics for every ticker over the window between start and end
+/**
+ * calculate a number of statistics for every ticker over the window between start and end
+ */
 export async function calculateStats(
   orderbook: Orderbook,
   tickers: string[],

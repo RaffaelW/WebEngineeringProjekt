@@ -4,9 +4,9 @@ import { fileURLToPath } from "node:url";
 import { Alpaca, Bar, trading, values } from "@alpacahq/alpaca-trade-api";
 import dotenv from "dotenv";
 
+import type { AssetHistory } from "../../../models/history.d.ts";
 import { getHistory } from "../history/history.service.js";
 import { endOfDay, startOfDay } from "./date.js";
-import type { AssetHistory } from "../../../models/history.d.ts";
 
 export type AlpacaAsset = trading.Assets;
 
@@ -154,28 +154,59 @@ export async function fetchLivePrice(ticker: string): Promise<number> {
   }
 }
 
-/**
- * Last minute bar the asset traded on the given day
- */
-export async function fetchLastBarOfDay(ticker: string, day: Date): Promise<AssetHistory> {
-  const bars: AssetHistory[] = await getHistory(ticker, "1min", startOfDay(day), endOfDay(day));
+// how far a fallback may reach back for the last known bar of a ticker
+const DAY_MS: number = 24 * 60 * 60 * 1000;
+const FALLBACK_LOOKBACK_MS: number = 365 * DAY_MS;
 
-  const last: AssetHistory | undefined = bars.at(-1);
-  if (!last) {
-    throw new NoMarketDataError(`No market data for ${ticker} on ${startOfDay(day).toISOString()}`);
+/**
+ * The last bar the asset traded at or before the given day.
+ *
+ * The day is a trading day, but a single ticker can still sit out a session
+ * (halt, gap, recent listing), so a quiet day falls back to the most recent
+ * daily bar of the previous year. Throws only if the asset never traded at all.
+ */
+async function lastBarOnOrBefore(ticker: string, day: Date): Promise<AssetHistory> {
+  const windowStart: Date = startOfDay(day);
+  const windowEnd: Date = endOfDay(day);
+
+  const minuteBars: AssetHistory[] = await getHistory(ticker, "1min", windowStart, windowEnd);
+  const lastMinute: AssetHistory | undefined = minuteBars.at(-1);
+  if (lastMinute) {
+    return lastMinute;
   }
-  return last;
+
+  // 1min is capped at 11 days by getHistory, so the fallback reaches back via daily bars
+  const dailyStart: Date = new Date(windowStart.getTime() - FALLBACK_LOOKBACK_MS);
+  const dailyBars: AssetHistory[] = await getHistory(ticker, "1d", dailyStart, windowEnd);
+  const lastDaily: AssetHistory | undefined = dailyBars.at(-1);
+  if (lastDaily) {
+    return lastDaily;
+  }
+
+  throw new NoMarketDataError(
+    `No market data for ${ticker} at or before ${windowStart.toISOString()}`,
+  );
 }
 
 /**
- * First minute bar the asset traded on the given day
+ * Last minute bar the asset traded on the given day,
+ * or if the ticker did not trade that day the last bar at or before it.
+ */
+export async function fetchLastBarOfDay(ticker: string, day: Date): Promise<AssetHistory> {
+  return lastBarOnOrBefore(ticker, day);
+}
+
+/**
+ * First minute bar the asset traded on the given day, or if the ticker did not
+ * trade that day the last bar at or before it.
  */
 export async function fetchFirstBarOfDay(ticker: string, day: Date): Promise<AssetHistory> {
   const bars: AssetHistory[] = await getHistory(ticker, "1min", startOfDay(day), endOfDay(day));
 
   const first: AssetHistory | undefined = bars.at(0);
-  if (!first) {
-    throw new NoMarketDataError(`No market data for ${ticker} on ${startOfDay(day).toISOString()}`);
+  if (first) {
+    return first;
   }
-  return first;
+
+  return lastBarOnOrBefore(ticker, day);
 }

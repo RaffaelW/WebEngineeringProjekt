@@ -1,9 +1,9 @@
 import { Router } from "express";
 import z from "zod";
-import { requireAuth } from "../auth/auth.middleware.js";
-import { endOfDay, startOfDay } from "../lib/date.js";
 import type { AssetHistory, HistoryQuery } from "../../../models/history.d.ts";
+import { requireAuth } from "../auth/auth.middleware.js";
 import { timeFrameKeys } from "../lib/timeframe.js";
+import { endDateSchema, startDateSchema, tickerSchema } from "../lib/validation.js";
 import { validateQuery } from "../middleware/validation.middleware.js";
 import type { HistoryWindow } from "../models/history.d.ts";
 import { getHistory, resolveHistoryWindow } from "./history.service.js";
@@ -11,19 +11,9 @@ import { getHistory, resolveHistoryWindow } from "./history.service.js";
 export const router = Router();
 
 const historySchema = z.object({
-  ticker: z
-    .string()
-    .min(1)
-    .max(10)
-    .transform((s: string) => s.toUpperCase()),
-  start: z.iso
-    .date()
-    .transform((s: string) => startOfDay(new Date(s)))
-    .optional(),
-  end: z.iso
-    .date()
-    .transform((s: string) => endOfDay(new Date(s)))
-    .optional(),
+  ticker: tickerSchema,
+  start: startDateSchema,
+  end: endDateSchema,
   timeframe: z.enum(timeFrameKeys),
 }) satisfies z.ZodType<HistoryQuery>;
 type HistorySchema = z.infer<typeof historySchema>;
