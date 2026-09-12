@@ -22,10 +22,14 @@ export async function isTradeDay(date: Date): Promise<boolean> {
   return msTradeDays.includes(day.getTime());
 }
 
-// a window this wide always contains a trading day, even across the longest holiday breaks
+/**
+ * a window this wide always contains a trading day, even across the longest holiday breaks
+ */
 const WINDOW_DAYS: number = 7;
 
-// the trading days of the WINDOW_DAYS leading up to date, in ascending order
+/**
+ * the trading days of the WINDOW_DAYS leading up to date, in ascending order
+ */
 async function fetchRecentTradingDays(date: Date): Promise<Date[]> {
   const lowLimit: Date = new Date(date);
   lowLimit.setUTCDate(lowLimit.getUTCDate() - WINDOW_DAYS);
@@ -67,8 +71,11 @@ export async function getLatestTradedDay(date: Date): Promise<Date> {
 
   return previous;
 }
-
-// the market clock has no history, this can only answer for the current moment
+/**
+ * Check if the market is currently open.
+ * @returns A promise that resolves to a boolean indicating if the market is open.
+ */
 export async function isMarketOpen(): Promise<boolean> {
+  // the market clock has no history, this can only answer for the current moment
   return (await fetchMarketClock()).isOpen;
 }

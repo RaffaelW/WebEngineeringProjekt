@@ -294,7 +294,9 @@ export function setWantedTickers(orderbook: Orderbook, tickers: string[] | undef
   return wanted;
 }
 
-// return end itself, or without one the latest day that already has market data
+/**
+ * return end itself, or without one the latest day that already has market data
+ */
 export async function getLatestValidEnd(end: Date | undefined): Promise<Date> {
   if (end && !(await isTradeDay(end))) {
     throw new NotATradeDayError(end);
@@ -320,7 +322,9 @@ export async function getValidStart(start: Date | undefined): Promise<Date> {
   return startOfDay(start);
 }
 
-// calculate a number of statistics for every ticker over the window between start and end
+/**
+ * calculate a number of statistics for every ticker over the window between start and end
+ */
 export async function calculateStats(
   orderbook: Orderbook,
   tickers: string[],
