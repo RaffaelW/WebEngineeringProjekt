@@ -1,5 +1,5 @@
 /**
- * POST /api/auth/register, POST /api/auth/session, GET /api/auth/session
+ * POST /api/auth/register, POST /api/auth/session
  */
 
 export interface AuthCredentials {
@@ -8,7 +8,15 @@ export interface AuthCredentials {
 }
 
 /**
- * The signed in user, as returned by GET /api/auth/session.
+ * PATCH /api/auth/me
+ */
+export interface UpdateUserData {
+  name?: string;
+  password?: string;
+}
+
+/**
+ * The signed in user, as returned by GET /api/auth/me.
  */
 export interface SessionUser {
   id: number;
