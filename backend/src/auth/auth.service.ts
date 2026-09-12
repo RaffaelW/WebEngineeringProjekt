@@ -7,8 +7,12 @@ export type AuthTokenPayload = {
   id: number;
 };
 
+export async function hashPassword(password: string) {
+  return await argon2.hash(password);
+}
+
 export async function registerUser(name: string, password: string) {
-  const hashedPassword = await argon2.hash(password);
+  const hashedPassword = await hashPassword(password);
   return await createUser(name, hashedPassword);
 }
 
