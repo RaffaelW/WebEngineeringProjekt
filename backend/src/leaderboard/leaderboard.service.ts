@@ -1,3 +1,5 @@
+import type { Leaderboard, LeaderboardEntry } from "../../../models/leaderboard.d.ts";
+import type { Orderbook, Stats } from "../../../models/portfolio.d.ts";
 import {
   calculatePerformance,
   calculateStats,
@@ -6,8 +8,6 @@ import {
   getValidStart,
 } from "../portfolio/portfolio.service.js";
 import { getUserList } from "../user/user.service.js";
-import type { Orderbook, Stats } from "../../../models/portfolio.d.ts";
-import type { Leaderboard, LeaderboardEntry } from "../../../models/leaderboard.d.ts";
 
 /**
  * Retrieves the leaderboard of users based on their portfolio performance within a specified time frame.
@@ -31,7 +31,9 @@ export async function getLeaderboard(
 
   // calculate stats for each user in parallel
   const promises = users.map(async (user) => {
-    const orderbook: Orderbook = await getOrderBook(user.id, windowStart, windowEnd);
+    // all earlier orders are needed to calculate stats because data about
+    // previously bought stocks is needed to calculate realized gains
+    const orderbook: Orderbook = await getOrderBook(user.id, undefined, windowEnd);
     // Get unique tickers from the orderbook
     const tickers = [...new Set(orderbook.map((order) => order.ticker))];
 
