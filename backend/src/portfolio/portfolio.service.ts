@@ -298,11 +298,7 @@ export function setWantedTickers(orderbook: Orderbook, tickers: string[] | undef
  * return end itself, or without one the latest day that already has market data
  */
 export async function getLatestValidEnd(end: Date | undefined): Promise<Date> {
-  if (end && !(await isTradeDay(end))) {
-    throw new NotATradeDayError(end);
-  } else {
-    return end ? endOfDay(end) : endOfDay(await getLatestTradedDay(new Date()));
-  }
+  return endOfDay(await getLatestTradedDay(end ?? new Date()));
 }
 
 /**
