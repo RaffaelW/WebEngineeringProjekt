@@ -1,7 +1,12 @@
-import { Component, signal } from "@angular/core";
+import { Component, inject, Signal, signal } from "@angular/core";
 import { MatTabsModule } from "@angular/material/tabs";
 import { MatToolbarModule } from "@angular/material/toolbar";
-import { RouterLink, RouterLinkActive, RouterOutlet } from "@angular/router";
+import { isActive, Router, RouterLink, RouterLinkActive, RouterOutlet } from "@angular/router";
+
+type NavLink = {
+  path: string;
+  label: string;
+};
 
 @Component({
   selector: "app-root",
@@ -10,10 +15,13 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from "@angular/router";
   styleUrl: "./app.scss",
 })
 export class App {
-  protected readonly title = signal("FinanzVisu");
+  private readonly router: Router = inject(Router);
+
+  protected readonly onAuthPage: Signal<boolean> = isActive("/auth", this.router);
+  protected readonly title: Signal<string> = signal("FinanzVisu");
 
   // One tab per top-level route in app.routes.ts.
-  protected readonly links = [
+  protected readonly links: NavLink[] = [
     { path: "/dashboard", label: "Dashboard" },
     { path: "/leaderboard", label: "Leaderboard" },
     { path: "/settings", label: "Settings" },
