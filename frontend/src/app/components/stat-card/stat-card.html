@@ -1,0 +1,27 @@
+<mat-card appearance="outlined" class="stat-card">
+  <mat-card-header>
+    <mat-icon>{{ data().icon }}</mat-icon>
+    <mat-card-subtitle>{{ data().label }}</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    @defer (when !loading()) {
+      @if (error()) {
+        <span class="stat-error">{{ error() }}</span>
+      } @else {
+        <span
+          class="stat-value"
+          [class.positive]="data().signed && data().value > 0"
+          [class.negative]="data().signed && data().value < 0"
+        >
+          @if (data().kind === "percent") {
+            {{ data().value | percent: "1.2-2" }}
+          } @else {
+            {{ data().value | currency }}
+          }
+        </span>
+      }
+    } @placeholder (minimum 1s) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+  </mat-card-content>
+</mat-card>

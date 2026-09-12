@@ -1,0 +1,42 @@
+:host {
+  display: block;
+}
+
+.stat-card mat-card-header {
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.stat-card mat-icon {
+  order: -1;
+}
+
+.stat-card mat-card-subtitle {
+  font: var(--mat-sys-label-large);
+}
+
+.stat-card mat-card-content {
+  display: flex;
+  align-items: center;
+  min-height: 3rem;
+}
+
+.stat-value {
+  font: var(--mat-sys-headline-small);
+  color: var(--mat-sys-on-surface);
+  white-space: nowrap;
+}
+
+.positive {
+  color: #2e7d32;
+}
+
+.negative {
+  color: var(--mat-sys-error);
+}
+
+.stat-error {
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-error);
+}
