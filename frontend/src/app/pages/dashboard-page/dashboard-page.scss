@@ -2,4 +2,17 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
   gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dashboard-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
+  // both columns take the height of the transaction card
+  align-items: stretch;
+  gap: 1rem;
+
+  @media (max-width: 56rem) {
+    grid-template-columns: 1fr;
+  }
 }

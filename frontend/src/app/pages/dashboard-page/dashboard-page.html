@@ -3,3 +3,9 @@
     <stat-card [data]="card" [loading]="loading()" [error]="error()" />
   }
 </section>
+
+<section class="dashboard-main">
+  <app-chart />
+
+  <search-area [(selection)]="selection" [config]="searchConfig" (submit)="onSubmit()" />
+</section>

@@ -7,6 +7,8 @@ import {
   LOCALE_ID,
   provideBrowserGlobalErrorListeners,
 } from "@angular/core";
+import { provideNativeDateAdapter } from "@angular/material/core";
+import { provideNativeDateTimeAdapter } from "@dhutaryan/ngx-mat-timepicker";
 import { provideRouter } from "@angular/router";
 
 import { routes } from "./app.routes";
@@ -20,6 +22,10 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideHttpClient(withInterceptors([withApiCredentials])),
+    // Date objects for the Material date and time pickers, formatted via LOCALE_ID
+    provideNativeDateAdapter(),
+    // Date objects for the clock-dial time picker (ngx-mat-timepicker)
+    provideNativeDateTimeAdapter(),
     { provide: LOCALE_ID, useValue: "de" },
     { provide: DEFAULT_CURRENCY_CODE, useValue: "EUR" },
   ],
