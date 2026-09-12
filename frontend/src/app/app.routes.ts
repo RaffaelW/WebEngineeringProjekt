@@ -1,14 +1,17 @@
 import { Routes } from "@angular/router";
-import { authGuard } from "./guards/auth-guard";
+import { authGuard, userGuard } from "./guards/auth-guard";
 
 export const routes: Routes = [
+  // redirect root to /dashboard
   { path: "", pathMatch: "full", redirectTo: "dashboard" },
   {
     path: "auth",
     title: "Login – FinanzVisu",
+    canActivate: [userGuard],
     loadComponent: () => import("./pages/auth-page/auth-page").then((m) => m.AuthPage),
   },
   // Every page below requires a signed in user, the guard redirects to /auth otherwise.
+  // Grouping adds no path segment
   {
     path: "",
     canActivateChild: [authGuard],
@@ -33,5 +36,6 @@ export const routes: Routes = [
       },
     ],
   },
+  // Catch-all route, redirects to /dashboard
   { path: "**", redirectTo: "dashboard" },
 ];

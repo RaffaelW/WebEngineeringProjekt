@@ -24,3 +24,22 @@ export const authGuard: CanActivateFn = async () => {
     throw error;
   }
 };
+
+/**
+ * Redirect sign in user to /dashboard when trying to access /auth.
+ */
+export const userGuard: CanActivateFn = async () => {
+  const authApi: AuthApi = inject(AuthApi);
+  const router: Router = inject(Router);
+
+  try {
+    await firstValueFrom(authApi.getSession());
+    router.navigate(["/dashboard"]);
+    return false;
+  } catch (error) {
+    if (error instanceof HttpErrorResponse && error.status === 401) {
+      return true;
+    }
+    throw error;
+  }
+};
