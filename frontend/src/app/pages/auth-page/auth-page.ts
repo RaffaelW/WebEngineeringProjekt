@@ -3,8 +3,6 @@ import { Component, inject, signal, WritableSignal } from "@angular/core";
 import {
   FieldTree,
   form,
-  FormField,
-  FormRoot,
   hidden,
   maxLength,
   minLength,
@@ -12,34 +10,23 @@ import {
   TreeValidationResult,
   validate,
 } from "@angular/forms/signals";
-import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
-import { MatCardModule } from "@angular/material/card";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInputModule } from "@angular/material/input";
 import { Router } from "@angular/router";
 import { firstValueFrom } from "rxjs";
 import type { ApiMessage } from "../../../../../models/api.d.ts";
-import type { AuthCredentials } from "../../../../../models/auth.d.ts";
+import { AuthCard } from "../../components/auth-card/auth-card";
 import { AuthApi } from "../../services/auth-api";
+import { AuthCredentials } from "../../../../../models/auth.js";
 
-type AuthMode = "login" | "register";
+export type AuthMode = "login" | "register";
 
-interface AuthFormModel extends AuthCredentials {
+export interface AuthFormModel extends AuthCredentials {
   confirmPassword: string;
 }
 
 @Component({
   selector: "app-auth-page",
-  imports: [
-    FormField,
-    FormRoot,
-    MatButtonModule,
-    MatButtonToggleModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
-  ],
+  imports: [AuthCard, MatButtonToggleModule],
   templateUrl: "./auth-page.html",
   styleUrl: "./auth-page.scss",
 })

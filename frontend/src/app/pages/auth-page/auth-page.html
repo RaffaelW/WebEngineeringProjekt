@@ -9,58 +9,5 @@
     <mat-button-toggle value="register">Create account</mat-button-toggle>
   </mat-button-toggle-group>
 
-  <mat-card class="auth-card" appearance="outlined">
-    <mat-card-header>
-      <mat-card-title>{{ mode() === "login" ? "Login" : "Create account" }}</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <form [formRoot]="authForm">
-        <mat-form-field>
-          <mat-label>Username</mat-label>
-          <input matInput [formField]="authForm.name" autocomplete="username" />
-          @if (authForm.name().errors()[0]; as error) {
-            <mat-error>{{ error.message }}</mat-error>
-          }
-        </mat-form-field>
-
-        <mat-form-field>
-          <mat-label>Password</mat-label>
-          <input
-            matInput
-            type="password"
-            [formField]="authForm.password"
-            [autocomplete]="mode() === 'login' ? 'current-password' : 'new-password'"
-          />
-          @if (authForm.password().errors()[0]; as error) {
-            <mat-error>{{ error.message }}</mat-error>
-          }
-        </mat-form-field>
-
-        @if (mode() === "register") {
-          <mat-form-field>
-            <mat-label>Confirm password</mat-label>
-            <input
-              matInput
-              type="password"
-              [formField]="authForm.confirmPassword"
-              autocomplete="new-password"
-            />
-            @if (authForm.confirmPassword().errors()[0]; as error) {
-              <mat-error>{{ error.message }}</mat-error>
-            }
-          </mat-form-field>
-        }
-
-        @if (authForm().errors()[0]; as error) {
-          <p class="auth-error">{{ error.message }}</p>
-        }
-
-        <div class="auth-actions">
-          <button matButton="filled" type="submit" [disabled]="authForm().submitting()">
-            {{ mode() === "login" ? "Log in" : "Create account" }}
-          </button>
-        </div>
-      </form>
-    </mat-card-content>
-  </mat-card>
+  <auth-card [mode]="mode()" [authForm]="authForm" />
 </div>
