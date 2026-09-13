@@ -1,0 +1,55 @@
+.settings-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.settings-card {
+  width: 100%;
+  max-width: 30rem;
+}
+
+mat-card-content {
+  padding-top: 1rem;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.settings-hint {
+  margin: 0 0 0.5rem;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}
+
+.settings-error {
+  margin: 0 0 0.5rem;
+  color: var(--mat-sys-error);
+  font: var(--mat-sys-body-small);
+}
+
+.settings-success {
+  margin: 0 0 0.5rem;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}
+
+.settings-danger {
+  --mat-sys-primary: var(--mat-sys-error);
+  --mat-sys-on-primary: var(--mat-sys-on-error);
+  --mat-sys-outline: var(--mat-sys-error);
+}
