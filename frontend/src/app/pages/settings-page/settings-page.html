@@ -48,6 +48,19 @@
           }
         </mat-form-field>
 
+        <mat-form-field>
+          <mat-label>Confirm password</mat-label>
+          <input
+            matInput
+            type="password"
+            [formField]="passwordForm.confirmPassword"
+            autocomplete="new-password"
+          />
+          @if (passwordForm.confirmPassword().errors()[0]; as error) {
+            <mat-error>{{ error.message }}</mat-error>
+          }
+        </mat-form-field>
+
         @if (passwordForm().errors()[0]; as error) {
           <p class="settings-error">{{ error.message }}</p>
         }
@@ -71,8 +84,15 @@
     <mat-card-content>
       <p class="settings-hint">End the session or permanently delete your account.</p>
       <div class="settings-actions">
-        <button matButton="outlined" (click)="logout()">Log out</button>
-        <button matButton="outlined" class="settings-danger" (click)="deleteAccount()">
+        <button matButton="outlined" [disabled]="accountPending()" (click)="logout()">
+          Log out
+        </button>
+        <button
+          matButton="outlined"
+          class="settings-danger"
+          [disabled]="accountPending()"
+          (click)="deleteAccount()"
+        >
           Delete account
         </button>
       </div>
