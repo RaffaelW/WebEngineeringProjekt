@@ -61,7 +61,7 @@ export interface PortfolioChartQuery {
   end?: Date;
 }
 
-// One candle for the portfolio as a whole.
+// One candle for the portfolio as a whole, the shares held at its close priced at its close.
 export interface PortfolioBar {
   time: Date;
   value: number;
