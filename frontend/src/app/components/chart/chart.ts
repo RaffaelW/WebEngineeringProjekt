@@ -84,8 +84,8 @@ export class Chart implements OnChanges, AfterViewInit, OnDestroy {
     };
   }
 
-  private formatEuro(value: number): string {
-    return formatCurrency(value, "de", "€", "EUR");
+  private formatDollar(value: number): string {
+    return formatCurrency(value, "de", "$", "USD");
   }
 
   private buildOptions(): ApexOptions {
@@ -116,10 +116,10 @@ export class Chart implements OnChanges, AfterViewInit, OnDestroy {
       // legend on the left so it never collides with the toolbar on the right
       legend: { position: "top", horizontalAlign: "left" },
       xaxis: { type: "datetime", labels: { datetimeUTC: false } },
-      yaxis: { labels: { formatter: (value: number) => this.formatEuro(value) } },
+      yaxis: { labels: { formatter: (value: number) => this.formatDollar(value) } },
       tooltip: {
         x: data.tooltip.x,
-        y: { formatter: (value: number) => this.formatEuro(value) },
+        y: { formatter: (value: number) => this.formatDollar(value) },
       },
     };
   }

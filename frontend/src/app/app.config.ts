@@ -27,6 +27,6 @@ export const appConfig: ApplicationConfig = {
     // Date objects for the clock-dial time picker (ngx-mat-timepicker)
     provideNativeDateTimeAdapter(),
     { provide: LOCALE_ID, useValue: "de" },
-    { provide: DEFAULT_CURRENCY_CODE, useValue: "EUR" },
+    { provide: DEFAULT_CURRENCY_CODE, useValue: "USD" },
   ],
 };

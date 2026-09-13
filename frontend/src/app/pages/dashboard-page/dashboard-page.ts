@@ -525,7 +525,7 @@ export class DashboardPage {
     },
     {
       label: "Return",
-      icon: "euro",
+      icon: "attach_money",
       value: this.totalReturn(),
       kind: "currency",
       signed: true,
@@ -545,7 +545,7 @@ export class DashboardPage {
       value: this.performance(),
       kind: "percent",
       signed: true,
-      tooltip: `Return divided by the total costs, every buy ever made: ${formatCurrency(this.totalCosts(), "de", "€", "EUR")}`,
+      tooltip: `Return divided by the total costs, every buy ever made: ${formatCurrency(this.totalCosts(), "de", "$", "USD")}`,
     },
   ]);
 }
