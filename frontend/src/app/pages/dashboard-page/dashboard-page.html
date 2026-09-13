@@ -18,6 +18,11 @@
   <search-area [(selection)]="selection" [config]="searchConfig" (submit)="onSubmit()" />
 </section>
 
+<section class="dashboard-positions">
+  <position-table [data]="activePositions()" />
+  <position-table [data]="closedPositions()" />
+</section>
+
 <section class="dashboard-orderbook">
   <transaction-list [data]="orderbookData()" />
 </section>

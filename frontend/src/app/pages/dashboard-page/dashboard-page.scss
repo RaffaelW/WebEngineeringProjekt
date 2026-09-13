@@ -23,3 +23,9 @@
     grid-template-columns: 1fr;
   }
 }
+
+.dashboard-positions {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}

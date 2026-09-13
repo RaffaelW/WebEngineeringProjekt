@@ -14,6 +14,7 @@ import type { AutocompleteAsset } from "../../../../../models/asset.d.ts";
 import { PortfolioApi } from "../../services/portfolio-api";
 import { firstValueFrom } from "rxjs";
 import { Chart } from "../../components/chart/chart";
+import { PositionTable } from "../../components/position-table/position-table";
 import { Reloader } from "../../components/reloader/reloader";
 import { SearchArea } from "../../components/search-area/search-area";
 import { StatCard } from "../../components/stat-card/stat-card";
@@ -57,6 +58,34 @@ export interface OrderbookData {
   error: string | null;
 }
 
+export type PositionStatus = "active" | "closed";
+
+export interface PositionRow {
+  ticker: string;
+  name: string;
+  shares: number;
+  // invested_money / shares, 0 once the position is closed
+  avgBuyPrice: number;
+  // current_value / shares, 0 once the position is closed
+  price: number;
+  invested: number;
+  value: number;
+  // current_value - invested_money
+  unrealized: number;
+  realized: number;
+  totalCosts: number;
+  performance: number;
+}
+
+export interface PositionTableData {
+  title: string;
+  icon: string;
+  status: PositionStatus;
+  rows: PositionRow[];
+  loading: boolean;
+  error: string | null;
+}
+
 export type StatKind = "currency" | "percent";
 
 export interface StatCardData {
@@ -71,7 +100,7 @@ export interface StatCardData {
 
 @Component({
   selector: "app-dashboard-page",
-  imports: [Chart, Reloader, SearchArea, StatCard, TransactionList],
+  imports: [Chart, PositionTable, Reloader, SearchArea, StatCard, TransactionList],
   templateUrl: "./dashboard-page.html",
   styleUrl: "./dashboard-page.scss",
 })
@@ -124,6 +153,34 @@ export class DashboardPage {
     loading: this.ordersLoading(),
     error: this.ordersError(),
   }));
+
+  protected readonly activePositions: Signal<PositionTableData> = computed<PositionTableData>(
+    () => ({
+      title: "Open positions",
+      icon: "work",
+      status: "active",
+      rows: this.stats()
+        .filter((stat: Stats) => stat.shares > 0)
+        .map((stat: Stats) => this.toPositionRow(stat))
+        .sort((a: PositionRow, b: PositionRow) => b.value - a.value),
+      loading: this.loading(),
+      error: this.error(),
+    }),
+  );
+
+  protected readonly closedPositions: Signal<PositionTableData> = computed<PositionTableData>(
+    () => ({
+      title: "Closed positions",
+      icon: "work_history",
+      status: "closed",
+      rows: this.stats()
+        .filter((stat: Stats) => stat.shares === 0)
+        .map((stat: Stats) => this.toPositionRow(stat))
+        .sort((a: PositionRow, b: PositionRow) => b.realized - a.realized),
+      loading: this.loading(),
+      error: this.error(),
+    }),
+  );
 
   protected readonly searchConfig: SearchAreaConfig = {
     defaultSelection: () => this.defaultSelection(),
@@ -285,6 +342,23 @@ export class DashboardPage {
         this.ordersLoading.set(false);
       }
     }
+  }
+
+  private toPositionRow(stat: Stats): PositionRow {
+    const open: boolean = stat.shares > 0;
+    return {
+      ticker: stat.ticker,
+      name: stat.name,
+      shares: stat.shares,
+      avgBuyPrice: open ? stat.invested_money / stat.shares : 0,
+      price: open ? stat.current_value / stat.shares : 0,
+      invested: stat.invested_money,
+      value: stat.current_value,
+      unrealized: stat.current_value - stat.invested_money,
+      realized: stat.realized_gains,
+      totalCosts: stat.total_costs,
+      performance: stat.performance,
+    };
   }
 
   // Possibly outsource to backend
