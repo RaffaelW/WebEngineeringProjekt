@@ -115,12 +115,14 @@
 
     <tr mat-header-row *matHeaderRowDef="columnsToDisplay"></tr>
     <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay"></tr>
-    @if (loadFailed()) {
-      <tr class="mat-row" *matNoDataRow>
-        <td class="mat-cell error-message" [attr.colspan]="columnsToDisplay.length" role="alert">
-          Could not load the leaderboard.
-        </td>
-      </tr>
-    }
+    <tr class="mat-row" *matNoDataRow>
+      <td class="mat-cell error-message" [attr.colspan]="columnsToDisplay.length">
+        @if (loadFailed()) {
+          <span role="alert">Could not load the leaderboard.</span>
+        } @else {
+          No data
+        }
+      </td>
+    </tr>
   </table>
 </div>
