@@ -327,6 +327,12 @@ export async function calculateStats(
   end: Date,
   start: Date,
 ): Promise<Stats[]> {
+  // both bounds snapped to the same previous trading day (e.g. a whole weekend):
+  // the range contains no trading day, there is nothing meaningful to compute
+  if (start.getTime() >= end.getTime()) {
+    throw new DateError("The selected range contains no trading day");
+  }
+
   // only the tickers the user asked for, the whole history of them is needed to know what start holds
   const owned: Orderbook = orderbook.filter((order: Order) => tickers.includes(order.ticker));
 
