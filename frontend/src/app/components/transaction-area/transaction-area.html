@@ -1,0 +1,103 @@
+<mat-card appearance="outlined" class="transaction-area">
+  <mat-card-header>
+    <mat-icon>swap_horiz</mat-icon>
+    <mat-card-subtitle>Transaction</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <mat-button-toggle-group
+      class="type-toggle"
+      [value]="selection().transactionType"
+      (change)="patch({ transactionType: $event.value })"
+      hideSingleSelectionIndicator
+    >
+      <mat-button-toggle value="buy">
+        <mat-icon>add_shopping_cart</mat-icon>
+        Buy
+      </mat-button-toggle>
+      <mat-button-toggle value="sell">
+        <mat-icon>sell</mat-icon>
+        Sell
+      </mat-button-toggle>
+    </mat-button-toggle-group>
+
+    <mat-form-field class="asset-field">
+      <mat-label>Asset</mat-label>
+      <input
+        matInput
+        [formControl]="assetControl"
+        [matAutocomplete]="auto"
+        // reset the selected asset when the user types in the input field
+        (input)="resetAssetSelected()"
+      />
+      <mat-autocomplete
+        #auto
+        [displayWith]="displayAsset"
+        (optionSelected)="onAssetSelected($event.option.value)"
+      >
+        @for (option of options(); track option.ticker) {
+          <mat-option [value]="option">
+            <span class="option-name">{{ option.name }}</span>
+            <span class="option-meta">{{ option.ticker }} - {{ option.exchange }}</span>
+          </mat-option>
+        }
+      </mat-autocomplete>
+    </mat-form-field>
+
+    <mat-form-field class="shares-field">
+      <mat-label>Shares</mat-label>
+      <input
+        matInput
+        type="number"
+        min="1"
+        step="1"
+        [value]="selection().shares"
+        (input)="onSharesChange(sharesInput.valueAsNumber)"
+        #sharesInput
+      />
+    </mat-form-field>
+
+    <div class="date-time">
+      <mat-form-field>
+        <mat-label>Date</mat-label>
+        <input
+          matInput
+          [matDatepicker]="datepicker"
+          [value]="selection().dateTime"
+          [max]="config().latestOrderTime()"
+          (dateChange)="onDateChange($event.value)"
+        />
+        <mat-datepicker-toggle matIconSuffix [for]="datepicker" />
+        <mat-datepicker #datepicker />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Time</mat-label>
+        <input
+          matInput
+          [matTimepicker]="timepicker"
+          [value]="selection().dateTime"
+          (timeChange)="onTimeChange($event.value)"
+        />
+        <mat-timepicker-toggle matIconSuffix [for]="timepicker" />
+        <mat-timepicker #timepicker mode="dial" format="24h" />
+      </mat-form-field>
+    </div>
+
+    <p class="delay-hint">Latest possible time: {{ config().latestOrderTime() | date: "short" }}</p>
+  </mat-card-content>
+  <mat-card-actions>
+    <button
+      mat-flat-button
+      class="submit"
+      [class.buy]="selection().transactionType === 'buy'"
+      [class.sell]="selection().transactionType === 'sell'"
+      (click)="onSubmit()"
+      [disabled]="!canSubmit()"
+    >
+      <mat-icon>{{
+        selection().transactionType === "buy" ? "add_shopping_cart" : "sell"
+      }}</mat-icon>
+      {{ selection().transactionType === "buy" ? "Buy" : "Sell" }}
+    </button>
+  </mat-card-actions>
+</mat-card>

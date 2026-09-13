@@ -1,0 +1,93 @@
+:host {
+  display: block;
+}
+
+.transaction-area {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.transaction-area mat-card-header {
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.transaction-area mat-icon {
+  order: -1;
+}
+
+.transaction-area mat-card-subtitle {
+  font: var(--mat-sys-label-large);
+}
+
+.transaction-area mat-card-content {
+  display: flex;
+  flex-direction: column;
+  padding-top: 1rem;
+}
+
+.type-toggle {
+  align-self: center;
+  margin-bottom: 1rem;
+
+  mat-button-toggle {
+    min-width: 6rem;
+  }
+
+  mat-icon {
+    vertical-align: middle;
+    margin-right: 0.25rem;
+  }
+}
+
+.asset-field,
+.shares-field {
+  width: 100%;
+}
+
+.date-time {
+  display: flex;
+  gap: 1rem;
+
+  mat-form-field {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+.transaction-area mat-card-actions {
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.submit {
+  min-width: 5rem;
+}
+
+.submit.buy:not(:disabled) {
+  background-color: #2e7d32;
+  color: #fff;
+}
+
+.submit.sell:not(:disabled) {
+  background-color: var(--mat-sys-error);
+  color: var(--mat-sys-on-error);
+}
+
+.delay-hint {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.option-name {
+  display: block;
+}
+
+.option-meta {
+  display: block;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}

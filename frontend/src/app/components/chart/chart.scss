@@ -1,0 +1,140 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.chart-card {
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-card mat-card-header {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.chart-card mat-icon {
+  order: -1;
+}
+
+.chart-card mat-card-subtitle {
+  font: var(--mat-sys-label-large);
+}
+
+.controls {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.control-label {
+  font: var(--mat-sys-label-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.chart-card mat-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: 0.5rem;
+}
+
+.chart-area {
+  position: relative;
+  flex: 1;
+  min-height: 18rem;
+}
+
+.chart-host {
+  position: absolute;
+  inset: 0;
+
+  &.hidden {
+    visibility: hidden;
+  }
+}
+
+.chart-message {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.chart-error {
+  color: var(--mat-sys-error);
+}
+
+:host ::ng-deep .chart-host .apexcharts-canvas {
+  .apexcharts-toolbar {
+    padding: 0;
+    gap: 0.125rem;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  .apexcharts-zoom-icon {
+    display: none;
+  }
+
+  .apexcharts-zoomin-icon,
+  .apexcharts-zoomout-icon,
+  .apexcharts-reset-icon,
+  .apexcharts-menu-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    line-height: 1.75rem;
+    border-radius: 50%;
+    color: var(--mat-sys-on-surface-variant);
+
+    &:hover {
+      color: var(--mat-sys-on-surface);
+      background: color-mix(in srgb, var(--mat-sys-on-surface) 8%, transparent);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--mat-sys-primary);
+      outline-offset: 1px;
+    }
+  }
+
+  .apexcharts-menu {
+    padding: 0.25rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: var(--mat-sys-surface-container);
+    box-shadow: var(--mat-sys-level2);
+    backdrop-filter: none;
+    font: var(--mat-sys-body-medium);
+    color: var(--mat-sys-on-surface);
+  }
+
+  .apexcharts-menu-item {
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.25rem;
+
+    &:hover {
+      background: color-mix(in srgb, var(--mat-sys-on-surface) 8%, transparent);
+    }
+  }
+
+  .apexcharts-zoom-rect {
+    fill: var(--mat-sys-primary);
+    fill-opacity: 0.12;
+    stroke: var(--mat-sys-primary);
+  }
+}

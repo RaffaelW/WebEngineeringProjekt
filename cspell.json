@@ -7,16 +7,23 @@
     "autoincrement",
     "davidanson",
     "dbaeumer",
+    "dhutaryan",
     "esbenp",
     "Finanz",
     "finanzvisu",
     "fkey",
+    "intraday",
     "lookback",
     "Millis",
     "pkey",
     "refetched",
+    "timepicker",
     "treeify",
     "Visu",
-    "yoavbls"
+    "xaxis",
+    "yaxis",
+    "yoavbls",
+    "zoomin",
+    "zoomout"
   ]
 }

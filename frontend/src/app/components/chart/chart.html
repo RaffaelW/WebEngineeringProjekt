@@ -1,0 +1,50 @@
+<mat-card appearance="outlined" class="chart-card">
+  <mat-card-header>
+    <mat-icon>show_chart</mat-icon>
+    <mat-card-subtitle>{{ data().title }}</mat-card-subtitle>
+
+    <div class="controls">
+      <div class="control">
+        <span class="control-label">Window</span>
+        <mat-button-toggle-group
+          [value]="data().window"
+          (change)="windowChange.emit($event.value)"
+          hideSingleSelectionIndicator
+        >
+          @for (key of windowKeys; track key) {
+            <mat-button-toggle [value]="key">{{ key }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+
+      <div class="control">
+        <span class="control-label">Timeframe</span>
+        <mat-button-toggle-group
+          [value]="data().timeframe"
+          (change)="timeframeChange.emit($event.value)"
+          hideSingleSelectionIndicator
+        >
+          @for (key of timeFrameKeys; track key) {
+            <mat-button-toggle [value]="key" [disabled]="!data().allowedTimeframes[key]">
+              {{ timeFrameLabels[key] }}
+            </mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+    </div>
+  </mat-card-header>
+
+  <mat-card-content>
+    @if (data().loading; as boolean) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+    <div class="chart-area">
+      <div #chartHost class="chart-host" [class.hidden]="data().error !== null"></div>
+      @if (data().error; as message) {
+        <span class="chart-message chart-error">{{ message }}</span>
+      } @else if (!data().loading && data().points.length === 0) {
+        <span class="chart-message">{{ data().emptyMessage }}</span>
+      }
+    </div>
+  </mat-card-content>
+</mat-card>

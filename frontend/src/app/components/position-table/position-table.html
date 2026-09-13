@@ -1,0 +1,80 @@
+<mat-card appearance="outlined" class="position-table-card">
+  <mat-card-header>
+    <mat-icon>{{ data().icon }}</mat-icon>
+    <mat-card-subtitle>{{ data().title }}</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    @defer (when !data().loading) {
+      @if (data().error; as message) {
+        <span class="position-table-message position-table-error">{{ message }}</span>
+      } @else if (!data().loading && data().rows.length === 0) {
+        <span class="position-table-message">
+          {{ active() ? "No open positions" : "No closed positions" }}
+        </span>
+      } @else {
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Ticker</th>
+                @if (active()) {
+                  <th class="numeric">Shares</th>
+                  <th class="numeric">Avg. buy price</th>
+                  <th class="numeric">Price</th>
+                  <th class="numeric">Invested</th>
+                  <th class="numeric">Value</th>
+                  <th class="numeric">Unrealized</th>
+                } @else {
+                  <th class="numeric">Total costs</th>
+                }
+                <th class="numeric">Realized</th>
+                <th class="numeric">Performance</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of data().rows; track row.ticker) {
+                <tr>
+                  <td>{{ row.name }}</td>
+                  <td>{{ row.ticker }}</td>
+                  @if (active()) {
+                    <td class="numeric">{{ row.shares | number }}</td>
+                    <td class="numeric">{{ row.avgBuyPrice | currency }}</td>
+                    <td class="numeric">{{ row.price | currency }}</td>
+                    <td class="numeric">{{ row.invested | currency }}</td>
+                    <td class="numeric">{{ row.value | currency }}</td>
+                    <td
+                      class="numeric"
+                      [class.positive]="row.unrealized > 0"
+                      [class.negative]="row.unrealized < 0"
+                    >
+                      {{ row.unrealized | currency }}
+                    </td>
+                  } @else {
+                    <td class="numeric">{{ row.totalCosts | currency }}</td>
+                  }
+                  <td
+                    class="numeric"
+                    [class.positive]="row.realized > 0"
+                    [class.negative]="row.realized < 0"
+                  >
+                    {{ row.realized | currency }}
+                  </td>
+                  <td
+                    class="numeric"
+                    [class.positive]="row.performance > 0"
+                    [class.negative]="row.performance < 0"
+                  >
+                    {{ row.performance | percent: "1.2-2" }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    } @placeholder (minimum 1s) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+  </mat-card-content>
+</mat-card>

@@ -6,5 +6,11 @@ the Prisma CLI, so it stays out of the build to keep it out of dist.
 */
 {
   "extends": "../tsconfig.base.json",
-  "include": ["src/**/*.ts", "../models/**/*.ts", "prisma.config.ts", "prisma/seed.ts"]
+  "include": [
+    "src/**/*.ts",
+    "../models/**/*.ts",
+    "../lib/**/*.ts",
+    "prisma.config.ts",
+    "prisma/seed.ts"
+  ]
 }

@@ -1,0 +1,8 @@
+<mat-form-field subscriptSizing="dynamic" class="reloader-field">
+  <mat-label>Auto refresh</mat-label>
+  <mat-select [value]="intervalMinutes()" (selectionChange)="intervalMinutes.set($event.value)">
+    @for (minutes of intervalOptions; track minutes) {
+      <mat-option [value]="minutes">{{ minutes }} min</mat-option>
+    }
+  </mat-select>
+</mat-form-field>

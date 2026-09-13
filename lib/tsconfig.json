@@ -1,0 +1,12 @@
+/*
+The shared runtime code, imported by both workspaces. Each workspace compiles it as part of its
+own build — this project exists so tooling (ESLint's projectService, editors) has a tsconfig.json
+that owns these files.
+*/
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["**/*.ts"]
+}
