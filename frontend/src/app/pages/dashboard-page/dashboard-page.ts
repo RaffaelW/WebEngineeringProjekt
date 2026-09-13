@@ -126,6 +126,11 @@ export class DashboardPage {
   }
 
   // Possibly outsource to backend
+  // market worth of the open positions, invested + return - realized
+  private readonly portfolioValue = computed(() =>
+    this.stats().reduce((acc, stat) => acc + stat.current_value, 0),
+  );
+
   private readonly investedValue = computed(() =>
     this.stats().reduce((acc, stat) => acc + stat.invested_money, 0),
   );
@@ -152,18 +157,11 @@ export class DashboardPage {
   // cache the cards so they are no recomputed on every change detection cycle
   protected readonly cards: Signal<StatCardData[]> = computed<StatCardData[]>(() => [
     {
-      label: "Realized gains",
-      icon: "savings",
-      value: this.realizedGains(),
+      label: "Portfolio value",
+      icon: "account_balance",
+      value: this.portfolioValue(),
       kind: "currency",
-      signed: true,
-    },
-    {
-      label: "Performance",
-      icon: "trending_up",
-      value: this.performance(),
-      kind: "percent",
-      signed: true,
+      signed: false,
     },
     {
       label: "Invested value",
@@ -177,6 +175,20 @@ export class DashboardPage {
       icon: "euro",
       value: this.totalReturn(),
       kind: "currency",
+      signed: true,
+    },
+    {
+      label: "Realized gains",
+      icon: "savings",
+      value: this.realizedGains(),
+      kind: "currency",
+      signed: true,
+    },
+    {
+      label: "Performance",
+      icon: "trending_up",
+      value: this.performance(),
+      kind: "percent",
       signed: true,
     },
   ]);
