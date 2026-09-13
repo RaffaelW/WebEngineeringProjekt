@@ -5,7 +5,11 @@
 </section>
 
 <section class="dashboard-main">
-  <app-chart />
+  <portfolio-chart
+    [data]="chartData()"
+    (windowChange)="onWindowChange($event)"
+    (timeframeChange)="onTimeframeChange($event)"
+  />
 
   <search-area [(selection)]="selection" [config]="searchConfig" (submit)="onSubmit()" />
 </section>

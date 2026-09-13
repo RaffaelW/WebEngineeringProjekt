@@ -11,9 +11,12 @@ export const timeFrameLabels: Record<TimeFrameKey, string> = {
   "1mo": "1 Month",
 };
 
+// constraint since timeframe = time window doesn't hold data
+const minBarsPerWindow: number = 2;
+
 export function isTimeFrameAllowed(timeframe: TimeFrameKey, span: number): boolean {
   const range: TimeFrameRange = timeFrameRanges[timeframe];
-  return span >= range.min && span <= range.max;
+  return span >= range.min * minBarsPerWindow && span <= range.max;
 }
 
 export type WindowKey = "1W" | "1M" | "3M" | "1Y" | "ALL";
@@ -36,7 +39,7 @@ export function windowStart(window: WindowKey, end: Date): Date {
       start.setFullYear(start.getFullYear() - 1);
       break;
     case "ALL":
-      return new Date("2016-01-01T00:00:00Z");
+      return new Date(0);
   }
   return start;
 }

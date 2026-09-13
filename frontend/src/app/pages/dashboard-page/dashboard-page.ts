@@ -3,13 +3,21 @@ import { HttpErrorResponse } from "@angular/common/http";
 import { Component, computed, inject, Signal, signal, WritableSignal } from "@angular/core";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import type { ApiMessage } from "../../../../../models/api.d.ts";
-import type { Stats, TransactionType } from "../../../../../models/portfolio.d.ts";
+import type { TimeFrameKey } from "../../../../../models/history.d.ts";
+import type { PortfolioBar, Stats, TransactionType } from "../../../../../models/portfolio.d.ts";
 import type { AutocompleteAsset } from "../../../../../models/asset.d.ts";
 import { PortfolioApi } from "../../services/portfolio-api";
 import { firstValueFrom } from "rxjs";
 import { Chart } from "../../components/chart/chart";
 import { SearchArea } from "../../components/search-area/search-area";
 import { StatCard } from "../../components/stat-card/stat-card";
+import {
+  isTimeFrameAllowed,
+  timeFrameKeys,
+  WindowKey,
+  windowSpan,
+  windowStart,
+} from "../../lib/timeframe";
 
 // everything the user picks in the search area
 export interface TransactionSelection {
@@ -23,6 +31,16 @@ export interface SearchAreaConfig {
   defaultSelection: () => TransactionSelection;
   latestOrderTime: () => Date;
   maxQueryLength: number;
+}
+
+// everything the chart card draws
+export interface ChartData {
+  bars: PortfolioBar[];
+  loading: boolean;
+  error: string | null;
+  window: WindowKey;
+  timeframe: TimeFrameKey;
+  allowedTimeframes: Record<TimeFrameKey, boolean>;
 }
 
 export type StatKind = "currency" | "percent";
@@ -51,6 +69,32 @@ export class DashboardPage {
   protected readonly loading: WritableSignal<boolean> = signal(true);
   protected readonly error: WritableSignal<string | null> = signal(null);
 
+  protected readonly window: WritableSignal<WindowKey> = signal<WindowKey>("3M");
+  protected readonly timeframe: WritableSignal<TimeFrameKey> = signal<TimeFrameKey>("1d");
+
+  protected readonly bars: WritableSignal<PortfolioBar[]> = signal<PortfolioBar[]>([]);
+  protected readonly chartLoading: WritableSignal<boolean> = signal(true);
+  protected readonly chartError: WritableSignal<string | null> = signal(null);
+  private chartRequestId: number = 0;
+
+  private readonly allowedTimeframes: Signal<Record<TimeFrameKey, boolean>> = computed(() => {
+    const span: number = windowSpan(this.window(), new Date());
+    const allowed = {} as Record<TimeFrameKey, boolean>;
+    for (const key of timeFrameKeys) {
+      allowed[key] = isTimeFrameAllowed(key, span);
+    }
+    return allowed;
+  });
+
+  protected readonly chartData: Signal<ChartData> = computed<ChartData>(() => ({
+    bars: this.bars(),
+    loading: this.chartLoading(),
+    error: this.chartError(),
+    window: this.window(),
+    timeframe: this.timeframe(),
+    allowedTimeframes: this.allowedTimeframes(),
+  }));
+
   protected readonly searchConfig: SearchAreaConfig = {
     defaultSelection: () => this.defaultSelection(),
     latestOrderTime: () => this.latestOrderTime(),
@@ -63,6 +107,30 @@ export class DashboardPage {
 
   constructor() {
     this.loadStats();
+    this.loadChart();
+  }
+
+  protected onWindowChange(window: WindowKey): void {
+    this.window.set(window);
+
+    const allowed: TimeFrameKey[] = timeFrameKeys.filter(
+      (key: TimeFrameKey) => this.allowedTimeframes()[key],
+    );
+    if (!allowed.includes(this.timeframe())) {
+      const current: number = timeFrameKeys.indexOf(this.timeframe());
+      const fallback: TimeFrameKey | undefined =
+        allowed.find((key: TimeFrameKey) => timeFrameKeys.indexOf(key) > current) ?? allowed.at(-1);
+      if (fallback !== undefined) {
+        this.timeframe.set(fallback);
+      }
+    }
+
+    this.loadChart();
+  }
+
+  protected onTimeframeChange(timeframe: TimeFrameKey): void {
+    this.timeframe.set(timeframe);
+    this.loadChart();
   }
 
   // market data is delayed by 15 minutes, so this is the latest time an order can be placed at
@@ -90,6 +158,7 @@ export class DashboardPage {
       );
       this.snackBar.open(result.message, undefined, { duration: 4000 });
       this.loadStats();
+      this.loadChart();
     } catch (error) {
       this.snackBar.open(this.transactionErrorMessage(error), "Close", {
         panelClass: "snackbar-error",
@@ -124,6 +193,34 @@ export class DashboardPage {
       this.error.set("Could not load portfolio");
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  private async loadChart(): Promise<void> {
+    const requestId: number = ++this.chartRequestId;
+    this.chartLoading.set(true);
+    this.chartError.set(null);
+
+    try {
+      const end: Date = new Date();
+      const bars: PortfolioBar[] = await firstValueFrom(
+        this.portfolioApi.getChart({
+          timeframe: this.timeframe(),
+          start: windowStart(this.window(), end),
+          end,
+        }),
+      );
+      if (requestId === this.chartRequestId) {
+        this.bars.set(bars);
+      }
+    } catch {
+      if (requestId === this.chartRequestId) {
+        this.chartError.set("Could not load chart");
+      }
+    } finally {
+      if (requestId === this.chartRequestId) {
+        this.chartLoading.set(false);
+      }
     }
   }
 

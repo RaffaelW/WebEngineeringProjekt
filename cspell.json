@@ -12,12 +12,17 @@
     "Finanz",
     "finanzvisu",
     "fkey",
+    "intraday",
     "lookback",
     "pkey",
     "refetched",
     "timepicker",
     "treeify",
     "Visu",
-    "yoavbls"
+    "xaxis",
+    "yaxis",
+    "yoavbls",
+    "zoomin",
+    "zoomout"
   ]
 }
