@@ -7,6 +7,7 @@ import type { SessionUser } from "./auth.d.ts";
 export interface LeaderboardQuery {
   start?: Date;
   end?: Date;
+  days?: number;
 }
 
 export interface LeaderboardEntry {

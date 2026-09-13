@@ -106,6 +106,7 @@ export class SerializeService {
     return {
       start: this.toOptionalIsoDate(query.start),
       end: this.toOptionalIsoDate(query.end),
+      days: query.days,
     };
   }
 

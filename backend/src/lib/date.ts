@@ -14,6 +14,15 @@ export function endOfDay(time: Date): Date {
   return day;
 }
 
+/**
+ * start of the day a number of calendar days before time
+ */
+export function daysBefore(time: Date, days: number): Date {
+  const day: Date = startOfDay(time);
+  day.setUTCDate(day.getUTCDate() - days);
+  return day;
+}
+
 export async function isTradeDay(date: Date): Promise<boolean> {
   const day: Date = startOfDay(date);
   const rawTradeDays: Date[] = await fetchTradingDays(day, day);
