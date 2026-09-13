@@ -1,6 +1,9 @@
 @if (!onAuthPage()) {
   <mat-toolbar class="app-toolbar">
-    <a class="app-brand" routerLink="/dashboard">{{ title() }}</a>
+    <a class="app-brand" routerLink="/dashboard">
+      <img class="app-logo" src="/favicon.svg" alt="FinanzVisu logo" />
+      {{ title() }}
+    </a>
     <nav class="app-nav">
       @for (link of links; track link.path) {
         <a class="app-nav-link" [routerLink]="link.path" routerLinkActive="active">

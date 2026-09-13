@@ -14,6 +14,9 @@
 }
 
 .app-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font: var(--mat-sys-title-medium);
   color: var(--mat-sys-primary);
   text-decoration: none;
@@ -68,6 +71,19 @@
 
 .app-menu-divider {
   margin: 0.25rem 0;
+}
+
+.app-logo {
+  height: 24px;
+  width: 24px;
+}
+
+nav[mat-tab-nav-bar] {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--mat-sys-surface-container);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
 }
 
 .app-content {
