@@ -22,6 +22,7 @@ import {
   DateError,
   endOfDay,
   getLatestTradedDay,
+  getNextTradingDay,
   isMarketOpen,
   isTradeDay,
   startOfDay,
@@ -302,7 +303,10 @@ export async function getLatestValidEnd(end: Date | undefined): Promise<Date> {
 }
 
 /**
- * start of the window, a trading day so the position held there can be priced
+ * start of the window, a trading day so the position held there can be priced off its first bar
+ *
+ * a start that is no trading day moves forward to the next one, so the window only
+ * contains the trading days inside the requested range
  *
  * without a start the window covers the whole history, nothing is ever carried into it
  */
@@ -315,7 +319,7 @@ export async function getValidStart(start: Date | undefined): Promise<Date> {
     return startOfDay(start);
   }
 
-  return endOfDay(await getLatestTradedDay(start));
+  return startOfDay(await getNextTradingDay(start));
 }
 
 /**
@@ -327,7 +331,7 @@ export async function calculateStats(
   end: Date,
   start: Date,
 ): Promise<Stats[]> {
-  // both bounds snapped to the same previous trading day (e.g. a whole weekend):
+  // start snapped forward past the end (e.g. a whole weekend: Sat -> Mon, Sun -> Fri):
   // the range contains no trading day, there is nothing meaningful to compute
   if (start.getTime() >= end.getTime()) {
     throw new DateError("The selected range contains no trading day");

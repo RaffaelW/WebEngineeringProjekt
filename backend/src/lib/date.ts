@@ -71,6 +71,27 @@ export async function getLatestTradedDay(date: Date): Promise<Date> {
 
   return previous;
 }
+
+/**
+ * Earliest trading day at or after date. Unlike getLatestTradedDay this needs no market
+ * clock, a window starting there only needs the session's first bar.
+ */
+export async function getNextTradingDay(date: Date): Promise<Date> {
+  const highLimit: Date = new Date(date);
+  highLimit.setUTCDate(highLimit.getUTCDate() + WINDOW_DAYS);
+
+  const tradingDays: Date[] = await fetchTradingDays(date, highLimit);
+
+  if (tradingDays.length === 0) {
+    throw new DateError(
+      `No trading day between ${startOfDay(date).toISOString()} and ${startOfDay(highLimit).toISOString()}`,
+    );
+  }
+
+  // ascending order, so the earliest trading day is the first one
+  return tradingDays[0];
+}
+
 /**
  * Check if the market is currently open.
  * @returns A promise that resolves to a boolean indicating if the market is open.
