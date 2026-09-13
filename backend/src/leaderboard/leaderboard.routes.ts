@@ -16,13 +16,18 @@ const schema = z
   .object({
     start: startDateSchema,
     end: endDateSchema,
+    days: z.coerce.number().int().positive().optional(),
   })
-  .refine(requireStartBeforeEnd, startBeforeEndError) satisfies z.ZodType<LeaderboardQuery>;
+  .refine(requireStartBeforeEnd, startBeforeEndError)
+  .refine((query) => query.days === undefined || query.start === undefined, {
+    message: "days and start are mutually exclusive",
+    path: ["days"],
+  }) satisfies z.ZodType<LeaderboardQuery>;
 
 type Schema = z.infer<typeof schema>;
 
 router.route("/").get(validateQuery(schema), async (req, res) => {
-  const { start, end } = req.validatedQuery as Schema;
-  const leaderboard: Leaderboard = await getLeaderboard(start, end);
+  const { start, end, days } = req.validatedQuery as Schema;
+  const leaderboard: Leaderboard = await getLeaderboard(start, end, days);
   res.json(leaderboard satisfies Leaderboard);
 });

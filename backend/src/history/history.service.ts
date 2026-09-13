@@ -1,5 +1,5 @@
 import { Asset, History } from "@prisma/client";
-import { TickerNotFoundError, clampToAvailable, fetchAssetHistory } from "../lib/alpaca.js";
+import { fetchAssetHistory, formingBoundary, TickerNotFoundError } from "../lib/alpaca.js";
 import { prisma } from "../lib/prisma.js";
 import { TimeFrameSpec, timeFrames } from "../lib/timeframe.js";
 import { Bar } from "@alpacahq/alpaca-trade-api";
@@ -102,9 +102,9 @@ export async function getHistory(
    *
    * The boundary has to come from the fixed period grid rather like the full hours
    */
-  const forming: number = Math.floor(clampToAvailable(new Date()).getTime() / spec.min) * spec.min;
+  const forming: Date = formingBoundary(spec.min);
 
-  const cacheEnd: Date = new Date(Math.min(end.getTime(), forming - 1));
+  const cacheEnd: Date = new Date(Math.min(end.getTime(), forming.getTime() - 1));
 
   const history: AssetHistory[] = [];
 
@@ -127,8 +127,8 @@ export async function getHistory(
   // the bar which is still forming, fetched every time and never cached, it is not final yet.
   // a window ending before it never gets here, cacheEnd already covers all of it.
   // fetchAssetHistory drops the part of the window it is not allowed to ask for
-  if (end.getTime() >= forming) {
-    const bars: Bar[] = await fetchAssetHistory(asset.ticker, spec.alpaca, new Date(forming), end);
+  if (end.getTime() >= forming.getTime()) {
+    const bars: Bar[] = await fetchAssetHistory(asset.ticker, spec.alpaca, forming, end);
     history.push(...bars.map((bar: Bar) => barToAssetHistory(bar, asset.ticker)));
   }
 

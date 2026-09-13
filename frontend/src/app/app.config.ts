@@ -8,8 +8,8 @@ import {
   provideBrowserGlobalErrorListeners,
 } from "@angular/core";
 import { provideNativeDateAdapter } from "@angular/material/core";
-import { provideNativeDateTimeAdapter } from "@dhutaryan/ngx-mat-timepicker";
 import { provideRouter } from "@angular/router";
+import { provideNativeDateTimeAdapter } from "@dhutaryan/ngx-mat-timepicker";
 
 import { routes } from "./app.routes";
 import { withApiCredentials } from "./services/api";

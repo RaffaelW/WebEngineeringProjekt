@@ -7,6 +7,7 @@ import type { SessionUser } from "./auth.d.ts";
 export interface LeaderboardQuery {
   start?: Date;
   end?: Date;
+  days?: number;
 }
 
 export interface LeaderboardEntry {
@@ -16,7 +17,8 @@ export interface LeaderboardEntry {
   performance: number;
 }
 
-/**
- * Sorted by performance, best first.
- */
-export type Leaderboard = LeaderboardEntry[];
+export interface Leaderboard {
+  start: Date;
+  end: Date;
+  entries: LeaderboardEntry[];
+}

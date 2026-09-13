@@ -1,5 +1,6 @@
 import type { Leaderboard, LeaderboardEntry } from "../../../models/leaderboard.d.ts";
 import type { Orderbook, Stats } from "../../../models/portfolio.d.ts";
+import { daysBefore } from "../lib/date.js";
 import {
   calculatePerformance,
   calculateStats,
@@ -16,18 +17,22 @@ import { getUserList } from "../user/user.service.js";
  * If undefined, the earliest available date will be used.
  * @param end End date of the time frame for which to calculate the leaderboard.
  * If undefined, the date of the latest valid end will be used.
- * @returns A list of leaderboard entries sorted by performance,
- * each containing user information and their corresponding portfolio performance metrics.
+ * @param days Calendar days the time frame reaches back from its (clamped) end, replaces start.
+ * @returns The trading days the ranking was clamped to and the leaderboard entries sorted by
+ * performance, each containing user information and their corresponding portfolio performance metrics.
  */
 export async function getLeaderboard(
   start: Date | undefined,
   end: Date | undefined,
+  days: number | undefined,
 ): Promise<Leaderboard> {
-  const windowStart: Date = await getValidStart(start);
   const windowEnd: Date = await getLatestValidEnd(end);
+  // a relative window counts back from the day the ranking actually ends on
+  const requestedStart: Date | undefined = days === undefined ? start : daysBefore(windowEnd, days);
+  const windowStart: Date = await getValidStart(requestedStart);
 
   const users = await getUserList();
-  const leaderboard: Leaderboard = [];
+  const entries: LeaderboardEntry[] = [];
 
   // calculate stats for each user in parallel
   const promises = users.map(async (user) => {
@@ -50,11 +55,13 @@ export async function getLeaderboard(
       total_gains: totalGains,
       performance: calculatePerformance(totalCosts, totalGains),
     };
-    leaderboard.push(leaderboardEntry);
+    entries.push(leaderboardEntry);
   });
 
   await Promise.all(promises);
 
-  leaderboard.sort((a, b) => b.performance - a.performance);
-  return leaderboard;
+  entries.sort((a, b) => b.performance - a.performance);
+
+  // the window the ranking actually used, so the client can show where a bound was clamped to
+  return { start: windowStart, end: windowEnd, entries };
 }

@@ -3,6 +3,7 @@ import { inject } from "@angular/core";
 import { CanActivateFn, Router } from "@angular/router";
 import { firstValueFrom } from "rxjs";
 import { AuthApi } from "../services/auth-api";
+import { AuthState } from "../services/auth-state";
 
 /**
  * Lets the navigation through when the backend knows the session,
@@ -11,12 +12,14 @@ import { AuthApi } from "../services/auth-api";
  */
 export const authGuard: CanActivateFn = async () => {
   const authApi: AuthApi = inject(AuthApi);
+  const authState: AuthState = inject(AuthState);
   const router: Router = inject(Router);
 
   try {
-    await firstValueFrom(authApi.getSession());
+    authState.user.set(await firstValueFrom(authApi.getSession()));
     return true;
   } catch (error) {
+    authState.user.set(null);
     if (error instanceof HttpErrorResponse && error.status === 401) {
       router.navigate(["/auth"]);
       return false;

@@ -9,11 +9,11 @@ import type {
   TransactionRequest,
 } from "../../../models/portfolio.d.ts";
 import {
-  clampToAvailable,
   fetchAssetHistory,
   fetchFirstBarOfDay,
   fetchLastBarOfDay,
   fetchLivePrice,
+  formingBoundary,
   getApproxBarAt,
   TickerNotFoundError,
 } from "../lib/alpaca.js";
@@ -22,6 +22,7 @@ import {
   DateError,
   endOfDay,
   getLatestTradedDay,
+  getNextTradingDay,
   isMarketOpen,
   isTradeDay,
   startOfDay,
@@ -85,9 +86,11 @@ export async function processOrder(order: TransactionRequest, userId: number): P
   // one spec so the bars fetched and the coverage written can never disagree
   const daily: TimeFrameSpec = timeFrames["1d"];
   // from the start of the order day, the daily bar of that day is stamped before the
-  // order itself. clamp once, so the window fetched is the window recorded as cached
+  // order itself. Snap the end to the day grid once, so the window fetched is the window
+  // recorded as cached and concurrent orders agree on it down to the ms. The current,
+  // still forming daily bar is never claimed, matching getHistory.
   const fetchStart: Date = startOfDay(order.time);
-  const clampedEnd: Date = clampToAvailable(new Date());
+  const clampedEnd: Date = new Date(formingBoundary(daily.min).getTime() - 1);
   const bars: Bar[] = await fetchAssetHistory(order.ticker, daily.alpaca, fetchStart, clampedEnd);
 
   // save data with timeframe 1day as cache
@@ -302,7 +305,10 @@ export async function getLatestValidEnd(end: Date | undefined): Promise<Date> {
 }
 
 /**
- * start of the window, a trading day so the position held there can be priced
+ * start of the window, a trading day so the position held there can be priced off its first bar
+ *
+ * a start that is no trading day moves forward to the next one, so the window only
+ * contains the trading days inside the requested range
  *
  * without a start the window covers the whole history, nothing is ever carried into it
  */
@@ -311,11 +317,11 @@ export async function getValidStart(start: Date | undefined): Promise<Date> {
     return new Date(0);
   }
 
-  if (!(await isTradeDay(start))) {
-    throw new NotATradeDayError(start);
+  if (await isTradeDay(start)) {
+    return startOfDay(start);
   }
 
-  return startOfDay(start);
+  return startOfDay(await getNextTradingDay(start));
 }
 
 /**
@@ -327,6 +333,12 @@ export async function calculateStats(
   end: Date,
   start: Date,
 ): Promise<Stats[]> {
+  // start snapped forward past the end (e.g. a whole weekend: Sat -> Mon, Sun -> Fri):
+  // the range contains no trading day, there is nothing meaningful to compute
+  if (start.getTime() >= end.getTime()) {
+    throw new DateError("The selected range contains no trading day");
+  }
+
   // only the tickers the user asked for, the whole history of them is needed to know what start holds
   const owned: Orderbook = orderbook.filter((order: Order) => tickers.includes(order.ticker));
 
