@@ -1,1 +1,13 @@
-<p>auth-page works!</p>
+<div class="auth-layout">
+  <mat-button-toggle-group
+    class="auth-mode"
+    [value]="mode()"
+    (change)="switchMode($event.value)"
+    hideSingleSelectionIndicator
+  >
+    <mat-button-toggle value="login">Log in</mat-button-toggle>
+    <mat-button-toggle value="register">Create account</mat-button-toggle>
+  </mat-button-toggle-group>
+
+  <auth-card [mode]="mode()" [authForm]="authForm" />
+</div>
