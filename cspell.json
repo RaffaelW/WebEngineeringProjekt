@@ -1,5 +1,5 @@
 {
-  "ignorePaths": ["node_modules", "dist", ".angular", "package-lock.json"],
+  "ignorePaths": ["node_modules", "dist", ".angular", "package-lock.json", "*.svg"],
   "language": "en",
   "words": [
     "alpacahq",
