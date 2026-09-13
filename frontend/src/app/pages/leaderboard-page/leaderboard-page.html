@@ -36,6 +36,10 @@
   }
 }
 
+@if (errorMessage()) {
+  <div class="error-message" role="alert">{{ errorMessage() }}</div>
+}
+
 <div class="table-scroll">
   <table mat-table [dataSource]="rows()">
     <ng-container matColumnDef="rank">

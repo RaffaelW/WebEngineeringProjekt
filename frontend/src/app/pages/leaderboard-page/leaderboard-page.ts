@@ -1,4 +1,5 @@
 import { CurrencyPipe, PercentPipe } from "@angular/common";
+import { HttpErrorResponse } from "@angular/common/http";
 import { Component, computed, DestroyRef, inject, OnInit, signal } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatChipListbox, MatChipListboxChange, MatChipOption } from "@angular/material/chips";
@@ -7,7 +8,12 @@ import { MatDatepickerInputEvent, MatDatepickerModule } from "@angular/material/
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatTableModule } from "@angular/material/table";
-import { BehaviorSubject, switchMap } from "rxjs";
+import { BehaviorSubject, catchError, EMPTY, switchMap } from "rxjs";
+import type {
+  ApiMessage,
+  ValidationErrorResponse,
+  ValidationErrorTree,
+} from "../../../../../models/api";
 import { LeaderboardEntry, LeaderboardQuery } from "../../../../../models/leaderboard";
 import { LeaderboardApi } from "../../services/leaderboard-api";
 
@@ -49,6 +55,7 @@ export class LeaderboardPage implements OnInit {
   });
 
   protected readonly rows = signal<(LeaderboardEntry | null)[]>(this.skeletonRows);
+  protected readonly errorMessage = signal<string | null>(null);
   // whole timeframe is the default, doesn't need to set explicitly
   private readonly timeframe = new BehaviorSubject<LeaderboardQuery>({
     start: undefined,
@@ -62,12 +69,21 @@ export class LeaderboardPage implements OnInit {
         switchMap((query) => {
           // switch to loading state while the data is loading
           this.rows.set(this.skeletonRows);
-          return this.leaderboardApi.getLeaderboard(query);
+          this.errorMessage.set(null);
+          return this.leaderboardApi.getLeaderboard(query).pipe(
+            catchError((error: unknown) => {
+              this.rows.set([]);
+              this.errorMessage.set(this.describeError(error));
+              return EMPTY;
+            }),
+          );
         }),
       )
       .subscribe({
-        next: (data) => this.rows.set(data),
-        error: () => this.rows.set([]),
+        next: (data) => {
+          this.errorMessage.set(null);
+          this.rows.set(data);
+        },
       });
   }
 
@@ -119,5 +135,37 @@ export class LeaderboardPage implements OnInit {
 
   private daysAgo(days: number): Date {
     return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  }
+
+  private describeError(error: unknown): string {
+    if (error instanceof HttpErrorResponse && error.status === 400) {
+      const body = error.error as Partial<ApiMessage & ValidationErrorResponse>;
+      if (body.message) {
+        return body.message;
+      }
+      const issues: string[] = this.flattenErrorIssues(body.errors);
+      if (issues.length > 0) {
+        return issues.join(", ");
+      }
+      return "Invalid date range.";
+    }
+    return "Could not load the leaderboard.";
+  }
+
+  private flattenErrorIssues(
+    tree: ValidationErrorTree | undefined,
+    issues: string[] = [],
+  ): string[] {
+    if (!tree) {
+      return issues;
+    }
+    issues.push(...(tree.errors ?? []));
+    for (const child of Object.values(tree.properties ?? {})) {
+      this.flattenErrorIssues(child, issues);
+    }
+    for (const child of tree.items ?? []) {
+      this.flattenErrorIssues(child, issues);
+    }
+    return issues;
   }
 }
