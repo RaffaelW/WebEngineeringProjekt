@@ -2,11 +2,30 @@ import { AlpacaAsset, fetchAssets } from "../lib/alpaca.js";
 import { prisma } from "../lib/prisma.js";
 import type { AutocompleteAsset } from "../../../models/asset.d.ts";
 
-export async function getAutoCompleteData(name: string): Promise<AutocompleteAsset[]> {
-  return await prisma.asset.findMany({
-    where: { name: { contains: name, mode: "insensitive" } },
-    select: { name: true, ticker: true, exchange: true },
-    take: 10,
+const AUTOCOMPLETE_SELECT = { name: true, ticker: true, exchange: true } as const;
+const AUTOCOMPLETE_LIMIT = 5;
+
+export async function getAutoCompleteData(search: string): Promise<AutocompleteAsset[]> {
+  const [tickerMatches, nameMatches] = await Promise.all([
+    prisma.asset.findMany({
+      where: { ticker: { startsWith: search, mode: "insensitive" } },
+      select: AUTOCOMPLETE_SELECT,
+      orderBy: { ticker: "asc" },
+      take: AUTOCOMPLETE_LIMIT,
+    }),
+    prisma.asset.findMany({
+      where: { name: { contains: search, mode: "insensitive" } },
+      select: AUTOCOMPLETE_SELECT,
+      orderBy: { name: "asc" },
+      take: AUTOCOMPLETE_LIMIT,
+    }),
+  ]);
+
+  const seen = new Set<string>();
+  return [...tickerMatches, ...nameMatches].filter((asset) => {
+    if (seen.has(asset.ticker)) return false;
+    seen.add(asset.ticker);
+    return true;
   });
 }
 
