@@ -16,7 +16,7 @@ import { firstValueFrom } from "rxjs";
 import { Chart } from "../../components/chart/chart";
 import { PositionTable } from "../../components/position-table/position-table";
 import { Reloader } from "../../components/reloader/reloader";
-import { SearchArea } from "../../components/search-area/search-area";
+import { TransactionArea } from "../../components/transaction-area/transaction-area";
 import { StatCard } from "../../components/stat-card/stat-card";
 import { TransactionList } from "../../components/transaction-list/transaction-list";
 import {
@@ -27,7 +27,7 @@ import {
   windowStart,
 } from "../../lib/timeframe";
 
-// everything the user picks in the search area
+// everything the user picks in the transaction area
 export interface TransactionSelection {
   asset: AutocompleteAsset | null;
   dateTime: Date;
@@ -35,7 +35,7 @@ export interface TransactionSelection {
   shares: number;
 }
 
-export interface SearchAreaConfig {
+export interface TransactionAreaConfig {
   defaultSelection: () => TransactionSelection;
   latestOrderTime: () => Date;
   maxQueryLength: number;
@@ -100,7 +100,7 @@ export interface StatCardData {
 
 @Component({
   selector: "app-dashboard-page",
-  imports: [Chart, PositionTable, Reloader, SearchArea, StatCard, TransactionList],
+  imports: [Chart, PositionTable, Reloader, TransactionArea, StatCard, TransactionList],
   templateUrl: "./dashboard-page.html",
   styleUrl: "./dashboard-page.scss",
 })
@@ -182,14 +182,14 @@ export class DashboardPage {
     }),
   );
 
-  protected readonly searchConfig: SearchAreaConfig = {
+  protected readonly transactionConfig: TransactionAreaConfig = {
     defaultSelection: () => this.defaultSelection(),
     latestOrderTime: () => this.latestOrderTime(),
     maxQueryLength: 25,
   };
-  // selection of the search area, not wired into the queries yet
+  // selection of the transaction area, not wired into the queries yet
   protected readonly selection: WritableSignal<TransactionSelection> = signal(
-    this.searchConfig.defaultSelection(),
+    this.transactionConfig.defaultSelection(),
   );
 
   constructor() {

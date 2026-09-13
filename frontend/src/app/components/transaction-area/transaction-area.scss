@@ -2,26 +2,26 @@
   display: block;
 }
 
-.search-area {
+.transaction-area {
   height: 100%;
   box-sizing: border-box;
 }
 
-.search-area mat-card-header {
+.transaction-area mat-card-header {
   align-items: center;
   gap: 0.5rem;
   color: var(--mat-sys-on-surface-variant);
 }
 
-.search-area mat-icon {
+.transaction-area mat-icon {
   order: -1;
 }
 
-.search-area mat-card-subtitle {
+.transaction-area mat-card-subtitle {
   font: var(--mat-sys-label-large);
 }
 
-.search-area mat-card-content {
+.transaction-area mat-card-content {
   display: flex;
   flex-direction: column;
   padding-top: 1rem;
@@ -56,7 +56,7 @@
   }
 }
 
-.search-area mat-card-actions {
+.transaction-area mat-card-actions {
   justify-content: center;
   flex-wrap: wrap;
   gap: 0.5rem;

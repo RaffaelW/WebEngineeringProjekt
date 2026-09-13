@@ -24,13 +24,13 @@ import { MatTimepickerModule } from "@dhutaryan/ngx-mat-timepicker";
 import { catchError, debounceTime, map, Observable, of, switchMap } from "rxjs";
 import type { AutocompleteAsset } from "../../../../../models/asset.d.ts";
 import type {
-  SearchAreaConfig,
+  TransactionAreaConfig,
   TransactionSelection,
 } from "../../pages/dashboard-page/dashboard-page";
 import { AssetApi } from "../../services/asset-api";
 
 @Component({
-  selector: "search-area",
+  selector: "transaction-area",
   imports: [
     DatePipe,
     ReactiveFormsModule,
@@ -44,10 +44,10 @@ import { AssetApi } from "../../services/asset-api";
     MatCardModule,
     MatIconModule,
   ],
-  templateUrl: "./search-area.html",
-  styleUrl: "./search-area.scss",
+  templateUrl: "./transaction-area.html",
+  styleUrl: "./transaction-area.scss",
 })
-export class SearchArea {
+export class TransactionArea {
   private readonly SEARCH_DEBOUNCE_MS: number = 300;
 
   private readonly assetApi: AssetApi = inject(AssetApi);
@@ -55,7 +55,7 @@ export class SearchArea {
   // owned by the parent page, edited here
   readonly selection: ModelSignal<TransactionSelection> = model.required<TransactionSelection>();
 
-  readonly config: InputSignal<SearchAreaConfig> = input.required<SearchAreaConfig>();
+  readonly config: InputSignal<TransactionAreaConfig> = input.required<TransactionAreaConfig>();
 
   // fired when the user confirms the transaction
   readonly submit: OutputEmitterRef<void> = output<void>();
