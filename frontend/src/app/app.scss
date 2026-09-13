@@ -9,9 +9,17 @@
 }
 
 .app-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font: var(--mat-sys-title-medium);
   color: var(--mat-sys-primary);
   text-decoration: none;
+}
+
+.app-logo {
+  height: 24px;
+  width: 24px;
 }
 
 nav[mat-tab-nav-bar] {
