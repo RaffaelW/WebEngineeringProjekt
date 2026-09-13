@@ -3,11 +3,14 @@
   (change)="onTimeframeChange($event)"
   aria-label="select a timeframe"
 >
-  <mat-chip-option value="all" selected> All-time </mat-chip-option>
-  <mat-chip-option value="year"> Last 365 days </mat-chip-option>
-  <mat-chip-option value="month"> Last 30 days </mat-chip-option>
-  <mat-chip-option value="week"> Last 7 days </mat-chip-option>
-  <mat-chip-option value="custom"> Custom </mat-chip-option>
+  @for (timeframe of timeframes; track timeframe.value) {
+    <mat-chip-option
+      [value]="timeframe.value"
+      [selectable]="timeframe.value !== selectedTimeframe()"
+    >
+      {{ timeframe.label }}
+    </mat-chip-option>
+  }
 </mat-chip-listbox>
 
 @if (selectedTimeframe() === "custom") {
@@ -16,7 +19,7 @@
       <input
         matInput
         [matDatepicker]="startPicker"
-        [value]="customStart()"
+        [value]="range().start ?? null"
         placeholder="Start date"
         (dateChange)="onStartDateChange($event)"
       />
@@ -27,21 +30,24 @@
       <input
         matInput
         [matDatepicker]="endPicker"
-        [value]="customEnd()"
+        [value]="range().end ?? null"
         placeholder="End date"
         (dateChange)="onEndDateChange($event)"
       />
       <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
       <mat-datepicker #endPicker></mat-datepicker>
     </mat-form-field>
+    @if (rangeInvalid()) {
+      <div class="range-error" role="alert">Start must not be after end</div>
+    }
   </div>
-  @if (customRangeInvalid()) {
-    <div class="range-error">Start must not be after end</div>
-  }
 }
 
-@if (errorMessage()) {
-  <div class="error-message" role="alert">{{ errorMessage() }}</div>
+@if (window(); as window) {
+  <p class="window" aria-live="polite">
+    Ranked over the trading days <strong>{{ window.start }}</strong> to
+    <strong>{{ window.end }}</strong>
+  </p>
 }
 
 <div class="table-scroll">
@@ -109,5 +115,12 @@
 
     <tr mat-header-row *matHeaderRowDef="columnsToDisplay"></tr>
     <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay"></tr>
+    @if (loadFailed()) {
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell error-message" [attr.colspan]="columnsToDisplay.length" role="alert">
+          Could not load the leaderboard.
+        </td>
+      </tr>
+    }
   </table>
 </div>

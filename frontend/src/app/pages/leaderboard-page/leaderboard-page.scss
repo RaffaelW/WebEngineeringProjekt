@@ -10,15 +10,23 @@
 }
 
 .range-error {
+  flex-basis: 100%;
+  margin: 0.5rem 0 0;
   color: var(--mat-sys-error);
-  font-size: 12px;
-  margin-bottom: 16px;
+  font: var(--mat-sys-body-medium);
+}
+
+.window {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 14px;
+  margin: 0 0 16px;
 }
 
 .error-message {
+  padding: 2rem 0;
   color: var(--mat-sys-error);
-  font-size: 14px;
-  margin-bottom: 16px;
+  font: var(--mat-sys-body-medium);
+  text-align: center;
 }
 
 .positive {

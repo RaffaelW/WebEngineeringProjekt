@@ -1,20 +1,30 @@
 import { CurrencyPipe, PercentPipe } from "@angular/common";
-import { HttpErrorResponse } from "@angular/common/http";
-import { Component, computed, DestroyRef, inject, OnInit, signal, viewChild } from "@angular/core";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { Component, computed, inject, signal, WritableSignal } from "@angular/core";
 import { MatChipListbox, MatChipListboxChange, MatChipOption } from "@angular/material/chips";
 import { MatDatepickerInputEvent, MatDatepickerModule } from "@angular/material/datepicker";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatTableModule } from "@angular/material/table";
-import { BehaviorSubject, catchError, EMPTY, switchMap } from "rxjs";
-import type {
-  ApiMessage,
-  ValidationErrorResponse,
-  ValidationErrorTree,
-} from "../../../../../models/api";
+import { firstValueFrom } from "rxjs";
 import { LeaderboardEntry, LeaderboardQuery } from "../../../../../models/leaderboard";
 import { LeaderboardApi } from "../../services/leaderboard-api";
+
+type Timeframe = "all" | "year" | "month" | "week" | "custom";
+
+const TIMEFRAMES: { value: Timeframe; label: string }[] = [
+  { value: "all", label: "All-time" },
+  { value: "year", label: "Last 365 days" },
+  { value: "month", label: "Last 30 days" },
+  { value: "week", label: "Last 7 days" },
+  { value: "custom", label: "Custom" },
+];
+const DAYS = { year: 365, month: 30, week: 7 } as const;
+const SKELETON_ROWS: null[] = Array.from({ length: 5 }, () => null);
+
+// same locale the date picker uses, so both show dates the same way
+function formatDay(day: Date): string {
+  return day.toLocaleDateString(navigator.language, { dateStyle: "medium" });
+}
 
 @Component({
   selector: "app-leaderboard-page",
@@ -28,150 +38,72 @@ import { LeaderboardApi } from "../../services/leaderboard-api";
     PercentPipe,
     CurrencyPipe,
   ],
-  providers: [],
   templateUrl: "./leaderboard-page.html",
   styleUrl: "./leaderboard-page.scss",
 })
-export class LeaderboardPage implements OnInit {
+export class LeaderboardPage {
   private readonly leaderboardApi = inject(LeaderboardApi);
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly chipListbox = viewChild(MatChipListbox);
 
-  private readonly skeletonRows = Array.from({ length: 5 }, () => null);
+  protected readonly timeframes = TIMEFRAMES;
   protected readonly columnsToDisplay = ["rank", "trader", "return", "invested", "profit"];
-  protected readonly selectedTimeframe = signal<"all" | "year" | "month" | "week" | "custom">(
-    "all",
-  );
-
-  private readonly customStartSignal = signal<Date | undefined>(this.daysAgo(30));
-  private readonly customEndSignal = signal<Date | undefined>(new Date());
-
-  protected readonly customStart = this.customStartSignal.asReadonly();
-  protected readonly customEnd = this.customEndSignal.asReadonly();
-  protected readonly customRangeInvalid = computed(() => {
-    const start = this.customStartSignal();
-    const end = this.customEndSignal();
+  protected readonly selectedTimeframe = signal<Timeframe>("all");
+  protected readonly range = signal<LeaderboardQuery>({ start: undefined, end: undefined });
+  protected readonly rangeInvalid = computed(() => {
+    const { start, end } = this.range();
     return !!start && !!end && start > end;
   });
 
-  protected readonly rows = signal<(LeaderboardEntry | null)[]>(this.skeletonRows);
-  protected readonly errorMessage = signal<string | null>(null);
-  // whole timeframe is the default, doesn't need to set explicitly
-  private readonly timeframe = new BehaviorSubject<LeaderboardQuery>({
-    start: undefined,
-    end: undefined,
-  });
+  protected readonly rows = signal<(LeaderboardEntry | null)[]>(SKELETON_ROWS);
+  // the trading days the backend clamped the requested range to, null while nothing is loaded
+  protected readonly window = signal<{ start: string; end: string } | null>(null);
+  protected readonly loadFailed: WritableSignal<boolean> = signal(false);
+  // counts up per load, so a slow older response can't overwrite a newer one
+  private requestId: number = 0;
 
-  ngOnInit() {
-    this.timeframe
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        switchMap((query) => {
-          // switch to loading state while the data is loading
-          this.rows.set(this.skeletonRows);
-          this.errorMessage.set(null);
-          return this.leaderboardApi.getLeaderboard(query).pipe(
-            catchError((error: unknown) => {
-              this.rows.set([]);
-              this.errorMessage.set(this.describeError(error));
-              return EMPTY;
-            }),
-          );
-        }),
-      )
-      .subscribe({
-        next: (data) => {
-          this.errorMessage.set(null);
-          this.rows.set(data);
-        },
-      });
+  constructor() {
+    this.load();
+  }
+
+  private async load(): Promise<void> {
+    if (this.rangeInvalid()) {
+      return;
+    }
+    const requestId: number = ++this.requestId;
+    this.rows.set(SKELETON_ROWS);
+    this.window.set(null);
+    this.loadFailed.set(false);
+    try {
+      const leaderboard = await firstValueFrom(this.leaderboardApi.getLeaderboard(this.range()));
+      if (requestId === this.requestId) {
+        this.rows.set(leaderboard.entries);
+        this.window.set({ start: formatDay(leaderboard.start), end: formatDay(leaderboard.end) });
+      }
+    } catch {
+      if (requestId === this.requestId) {
+        this.rows.set([]);
+        this.loadFailed.set(true);
+      }
+    }
   }
 
   onTimeframeChange(change: MatChipListboxChange) {
-    if (change.value === undefined) {
-      // a deselect must never clear the selection, snap the chip back to the current timeframe
-      this.chipListbox()?.writeValue(this.selectedTimeframe());
-      return;
+    const timeframe: Timeframe = change.value;
+    this.selectedTimeframe.set(timeframe);
+    if (timeframe === "all" || timeframe === "custom") {
+      this.range.set({ start: undefined, end: undefined });
+    } else {
+      this.range.set({ days: DAYS[timeframe] });
     }
-
-    this.selectedTimeframe.set(change.value);
-    if (change.value === "all") {
-      return this.timeframe.next({ start: undefined, end: undefined });
-    }
-
-    if (change.value === "custom") {
-      return this.emitCustomRange();
-    }
-
-    const days = {
-      year: 365,
-      month: 30,
-      week: 7,
-    };
-    const timeWindowMillis = days[change.value as "year" | "month" | "week"] * 24 * 60 * 60 * 1000;
-
-    this.timeframe.next({
-      start: new Date(Date.now() - timeWindowMillis),
-      end: new Date(),
-    });
+    this.load();
   }
 
   onStartDateChange(change: MatDatepickerInputEvent<Date>) {
-    if (change.value) {
-      this.customStartSignal.set(change.value);
-      this.emitCustomRange();
-    }
+    this.range.update((range) => ({ ...range, start: change.value ?? undefined }));
+    this.load();
   }
 
   onEndDateChange(change: MatDatepickerInputEvent<Date>) {
-    if (change.value) {
-      this.customEndSignal.set(change.value);
-      this.emitCustomRange();
-    }
-  }
-
-  private emitCustomRange() {
-    const start = this.customStartSignal();
-    const end = this.customEndSignal();
-    if (!start || !end || start > end) {
-      return;
-    }
-    this.timeframe.next({ start, end });
-  }
-
-  private daysAgo(days: number): Date {
-    return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-  }
-
-  private describeError(error: unknown): string {
-    if (error instanceof HttpErrorResponse && error.status === 400) {
-      const body = error.error as Partial<ApiMessage & ValidationErrorResponse>;
-      if (body.message) {
-        return body.message;
-      }
-      const issues: string[] = this.flattenErrorIssues(body.errors);
-      if (issues.length > 0) {
-        return issues.join(", ");
-      }
-      return "Invalid date range.";
-    }
-    return "Could not load the leaderboard.";
-  }
-
-  private flattenErrorIssues(
-    tree: ValidationErrorTree | undefined,
-    issues: string[] = [],
-  ): string[] {
-    if (!tree) {
-      return issues;
-    }
-    issues.push(...(tree.errors ?? []));
-    for (const child of Object.values(tree.properties ?? {})) {
-      this.flattenErrorIssues(child, issues);
-    }
-    for (const child of tree.items ?? []) {
-      this.flattenErrorIssues(child, issues);
-    }
-    return issues;
+    this.range.update((range) => ({ ...range, end: change.value ?? undefined }));
+    this.load();
   }
 }
