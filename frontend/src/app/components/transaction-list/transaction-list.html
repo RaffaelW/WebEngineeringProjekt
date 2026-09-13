@@ -1,0 +1,50 @@
+<mat-card appearance="outlined" class="transaction-list-card">
+  <mat-card-header>
+    <mat-icon>receipt_long</mat-icon>
+    <mat-card-subtitle>Orderbook</mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+    @defer (when !data().loading) {
+      @if (data().error; as message) {
+        <span class="transaction-list-message transaction-list-error">{{ message }}</span>
+      } @else if (!data().loading && data().orders.length === 0) {
+        <span class="transaction-list-message">No orders yet</span>
+      } @else {
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Name</th>
+                <th>Ticker</th>
+                <th>Type</th>
+                <th class="numeric">Shares</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (order of data().orders; track order.time) {
+                <tr>
+                  <td>{{ order.time | date: "short" }}</td>
+                  <td>{{ order.name }}</td>
+                  <td>{{ order.ticker }}</td>
+                  <td>
+                    <span
+                      [class.positive]="order.transactionType === 'buy'"
+                      [class.negative]="order.transactionType === 'sell'"
+                    >
+                      {{ order.transactionType === "buy" ? "Buy" : "Sell" }}
+                    </span>
+                  </td>
+                  <td class="numeric">{{ order.shares_amount | number }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    } @placeholder (minimum 1s) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+  </mat-card-content>
+</mat-card>

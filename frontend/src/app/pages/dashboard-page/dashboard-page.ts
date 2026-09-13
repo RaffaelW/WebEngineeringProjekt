@@ -4,7 +4,12 @@ import { Component, computed, inject, Signal, signal, WritableSignal } from "@an
 import { MatSnackBar } from "@angular/material/snack-bar";
 import type { ApiMessage } from "../../../../../models/api.d.ts";
 import type { TimeFrameKey } from "../../../../../models/history.d.ts";
-import type { PortfolioBar, Stats, TransactionType } from "../../../../../models/portfolio.d.ts";
+import type {
+  Order,
+  PortfolioBar,
+  Stats,
+  TransactionType,
+} from "../../../../../models/portfolio.d.ts";
 import type { AutocompleteAsset } from "../../../../../models/asset.d.ts";
 import { PortfolioApi } from "../../services/portfolio-api";
 import { firstValueFrom } from "rxjs";
@@ -12,6 +17,7 @@ import { Chart } from "../../components/chart/chart";
 import { Reloader } from "../../components/reloader/reloader";
 import { SearchArea } from "../../components/search-area/search-area";
 import { StatCard } from "../../components/stat-card/stat-card";
+import { TransactionList } from "../../components/transaction-list/transaction-list";
 import {
   isTimeFrameAllowed,
   timeFrameKeys,
@@ -44,6 +50,13 @@ export interface ChartData {
   allowedTimeframes: Record<TimeFrameKey, boolean>;
 }
 
+// everything the transaction list draws
+export interface OrderbookData {
+  orders: Order[];
+  loading: boolean;
+  error: string | null;
+}
+
 export type StatKind = "currency" | "percent";
 
 export interface StatCardData {
@@ -58,7 +71,7 @@ export interface StatCardData {
 
 @Component({
   selector: "app-dashboard-page",
-  imports: [Chart, Reloader, SearchArea, StatCard],
+  imports: [Chart, Reloader, SearchArea, StatCard, TransactionList],
   templateUrl: "./dashboard-page.html",
   styleUrl: "./dashboard-page.scss",
 })
@@ -77,8 +90,16 @@ export class DashboardPage {
   protected readonly chartLoading: WritableSignal<boolean> = signal(true);
   protected readonly chartError: WritableSignal<string | null> = signal(null);
 
+  protected readonly orders: WritableSignal<Order[]> = signal<Order[]>([]);
+  protected readonly ordersLoading: WritableSignal<boolean> = signal(true);
+  protected readonly ordersError: WritableSignal<string | null> = signal(null);
+
   // one counter per load function, so a slow older response can't overwrite a newer one
-  private readonly requestIds: { stats: number; chart: number } = { stats: 0, chart: 0 };
+  private readonly requestIds: { stats: number; chart: number; orderbook: number } = {
+    stats: 0,
+    chart: 0,
+    orderbook: 0,
+  };
 
   private readonly allowedTimeframes: Signal<Record<TimeFrameKey, boolean>> = computed(() => {
     const span: number = windowSpan(this.window(), new Date());
@@ -98,6 +119,12 @@ export class DashboardPage {
     allowedTimeframes: this.allowedTimeframes(),
   }));
 
+  protected readonly orderbookData: Signal<OrderbookData> = computed<OrderbookData>(() => ({
+    orders: this.orders(),
+    loading: this.ordersLoading(),
+    error: this.ordersError(),
+  }));
+
   protected readonly searchConfig: SearchAreaConfig = {
     defaultSelection: () => this.defaultSelection(),
     latestOrderTime: () => this.latestOrderTime(),
@@ -115,6 +142,7 @@ export class DashboardPage {
   protected onReload(): void {
     this.loadStats();
     this.loadChart();
+    this.loadOrderbook();
   }
 
   protected onWindowChange(window: WindowKey): void {
@@ -166,6 +194,7 @@ export class DashboardPage {
       this.snackBar.open(result.message, undefined, { duration: 4000 });
       this.loadStats();
       this.loadChart();
+      this.loadOrderbook();
     } catch (error) {
       this.snackBar.open(this.transactionErrorMessage(error), "Close", {
         panelClass: "snackbar-error",
@@ -234,6 +263,26 @@ export class DashboardPage {
     } finally {
       if (requestId === this.requestIds.chart) {
         this.chartLoading.set(false);
+      }
+    }
+  }
+
+  private async loadOrderbook(): Promise<void> {
+    const requestId: number = ++this.requestIds.orderbook;
+    this.ordersLoading.set(true);
+    this.ordersError.set(null);
+    try {
+      const orders: Order[] = await firstValueFrom(this.portfolioApi.getOrderbook());
+      if (requestId === this.requestIds.orderbook) {
+        this.orders.set(orders.reverse());
+      }
+    } catch {
+      if (requestId === this.requestIds.orderbook) {
+        this.ordersError.set("Could not load orderbook");
+      }
+    } finally {
+      if (requestId === this.requestIds.orderbook) {
+        this.ordersLoading.set(false);
       }
     }
   }

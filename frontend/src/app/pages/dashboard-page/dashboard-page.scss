@@ -17,6 +17,7 @@
   // both columns take the height of the transaction card
   align-items: stretch;
   gap: 1rem;
+  margin-bottom: 1rem;
 
   @media (max-width: 56rem) {
     grid-template-columns: 1fr;
