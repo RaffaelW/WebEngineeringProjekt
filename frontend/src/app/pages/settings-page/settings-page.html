@@ -76,6 +76,9 @@
           Delete account
         </button>
       </div>
+      @if (accountError(); as error) {
+        <p class="settings-error">{{ error }}</p>
+      }
     </mat-card-content>
   </mat-card>
 </div>

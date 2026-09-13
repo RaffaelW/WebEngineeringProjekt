@@ -10,9 +10,9 @@ import {
   required,
   TreeValidationResult,
 } from "@angular/forms/signals";
-import { MatDialog } from "@angular/material/dialog";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
+import { MatDialog } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { Router } from "@angular/router";
@@ -49,6 +49,7 @@ export class SettingsPage {
 
   protected readonly usernameSuccess = signal<string | null>(null);
   protected readonly passwordSuccess = signal<string | null>(null);
+  protected readonly accountError = signal<string | null>(null);
 
   private readonly usernameModel: WritableSignal<UsernameModel> = signal<UsernameModel>({
     name: "",
@@ -110,10 +111,13 @@ export class SettingsPage {
   }
 
   protected async logout(): Promise<void> {
+    this.accountError.set(null);
+
     try {
       await firstValueFrom(this.authApi.logout());
-    } finally {
       await this.router.navigateByUrl("/auth");
+    } catch (err: unknown) {
+      this.accountError.set(this.errorMessage(err));
     }
   }
 
@@ -123,11 +127,24 @@ export class SettingsPage {
       return;
     }
 
+    this.accountError.set(null);
+
     try {
       await firstValueFrom(this.authApi.delete());
-    } finally {
       await this.router.navigateByUrl("/auth");
+    } catch (err: unknown) {
+      this.accountError.set(this.errorMessage(err));
     }
+  }
+
+  private errorMessage(err: unknown): string {
+    if (err instanceof HttpErrorResponse) {
+      const body: ApiMessage = err.error;
+      if (body?.message) {
+        return body.message;
+      }
+    }
+    return "Something went wrong, please try again.";
   }
 
   private async confirmDeletion(): Promise<boolean> {
