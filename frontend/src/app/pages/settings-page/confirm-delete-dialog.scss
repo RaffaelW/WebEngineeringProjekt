@@ -1,0 +1,8 @@
+mat-dialog-content p {
+  margin: 0;
+}
+
+.confirm-delete {
+  --mat-sys-primary: var(--mat-sys-error);
+  --mat-sys-on-primary: var(--mat-sys-on-error);
+}

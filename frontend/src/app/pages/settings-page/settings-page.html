@@ -1,1 +1,81 @@
-<p>settings-page works!</p>
+<div class="settings-layout">
+  <mat-card class="settings-card" appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Change username</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formRoot]="usernameForm">
+        <mat-form-field>
+          <mat-label>Username</mat-label>
+          <input matInput [formField]="usernameForm.name" autocomplete="username" />
+          @if (usernameForm.name().errors()[0]; as error) {
+            <mat-error>{{ error.message }}</mat-error>
+          }
+        </mat-form-field>
+
+        @if (usernameForm().errors()[0]; as error) {
+          <p class="settings-error">{{ error.message }}</p>
+        }
+        @if (usernameSuccess(); as message) {
+          <p class="settings-success">{{ message }}</p>
+        }
+
+        <div class="settings-actions">
+          <button matButton="filled" type="submit" [disabled]="usernameForm().submitting()">
+            Save username
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="settings-card" appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Change password</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formRoot]="passwordForm">
+        <mat-form-field>
+          <mat-label>Password</mat-label>
+          <input
+            matInput
+            type="password"
+            [formField]="passwordForm.password"
+            autocomplete="new-password"
+          />
+          @if (passwordForm.password().errors()[0]; as error) {
+            <mat-error>{{ error.message }}</mat-error>
+          }
+        </mat-form-field>
+
+        @if (passwordForm().errors()[0]; as error) {
+          <p class="settings-error">{{ error.message }}</p>
+        }
+        @if (passwordSuccess(); as message) {
+          <p class="settings-success">{{ message }}</p>
+        }
+
+        <div class="settings-actions">
+          <button matButton="filled" type="submit" [disabled]="passwordForm().submitting()">
+            Save password
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="settings-card" appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Account</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <p class="settings-hint">End the session or permanently delete your account.</p>
+      <div class="settings-actions">
+        <button matButton="outlined" (click)="logout()">Log out</button>
+        <button matButton="outlined" class="settings-danger" (click)="deleteAccount()">
+          Delete account
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

@@ -1,0 +1,10 @@
+<h2 mat-dialog-title>Delete account?</h2>
+<mat-dialog-content>
+  <p>This permanently removes your account and all of your data. This action cannot be undone.</p>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button matButton="outlined" mat-dialog-close>Cancel</button>
+  <button matButton="filled" class="confirm-delete" [mat-dialog-close]="true">
+    Delete account
+  </button>
+</mat-dialog-actions>
