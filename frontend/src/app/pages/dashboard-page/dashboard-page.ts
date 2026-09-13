@@ -1,3 +1,4 @@
+import { formatCurrency } from "@angular/common";
 import { HttpErrorResponse } from "@angular/common/http";
 import { Component, computed, inject, Signal, signal, WritableSignal } from "@angular/core";
 import { MatSnackBar } from "@angular/material/snack-bar";
@@ -33,6 +34,7 @@ export interface StatCardData {
   kind: StatKind;
   // color the value green/red depending on its sign
   signed: boolean;
+  tooltip: string;
 }
 
 @Component({
@@ -162,6 +164,7 @@ export class DashboardPage {
       value: this.portfolioValue(),
       kind: "currency",
       signed: false,
+      tooltip: "Market worth of the shares still held",
     },
     {
       label: "Invested value",
@@ -169,6 +172,7 @@ export class DashboardPage {
       value: this.investedValue(),
       kind: "currency",
       signed: false,
+      tooltip: "What the shares still held were bought for",
     },
     {
       label: "Return",
@@ -176,6 +180,7 @@ export class DashboardPage {
       value: this.totalReturn(),
       kind: "currency",
       signed: true,
+      tooltip: "Unrealized gain of open positions plus realized gains of closed ones",
     },
     {
       label: "Realized gains",
@@ -183,6 +188,7 @@ export class DashboardPage {
       value: this.realizedGains(),
       kind: "currency",
       signed: true,
+      tooltip: "Profit and loss of shares already sold",
     },
     {
       label: "Performance",
@@ -190,6 +196,7 @@ export class DashboardPage {
       value: this.performance(),
       kind: "percent",
       signed: true,
+      tooltip: `Return divided by the total costs, every buy ever made: ${formatCurrency(this.totalCosts(), "de", "€", "EUR")}`,
     },
   ]);
 }

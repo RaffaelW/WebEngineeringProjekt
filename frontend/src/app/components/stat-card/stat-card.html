@@ -2,6 +2,9 @@
   <mat-card-header>
     <mat-icon>{{ data().icon }}</mat-icon>
     <mat-card-subtitle>{{ data().label }}</mat-card-subtitle>
+    <mat-icon class="stat-hint" [matTooltip]="data().tooltip" matTooltipPosition="above">
+      info
+    </mat-icon>
   </mat-card-header>
   <mat-card-content>
     @defer (when !loading()) {
