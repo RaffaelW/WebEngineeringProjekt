@@ -16,7 +16,8 @@ export interface LeaderboardEntry {
   performance: number;
 }
 
-/**
- * Sorted by performance, best first.
- */
-export type Leaderboard = LeaderboardEntry[];
+export interface Leaderboard {
+  start: Date;
+  end: Date;
+  entries: LeaderboardEntry[];
+}

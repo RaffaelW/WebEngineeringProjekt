@@ -16,8 +16,8 @@ import { getUserList } from "../user/user.service.js";
  * If undefined, the earliest available date will be used.
  * @param end End date of the time frame for which to calculate the leaderboard.
  * If undefined, the date of the latest valid end will be used.
- * @returns A list of leaderboard entries sorted by performance,
- * each containing user information and their corresponding portfolio performance metrics.
+ * @returns The trading days the ranking was clamped to and the leaderboard entries sorted by
+ * performance, each containing user information and their corresponding portfolio performance metrics.
  */
 export async function getLeaderboard(
   start: Date | undefined,
@@ -27,7 +27,7 @@ export async function getLeaderboard(
   const windowEnd: Date = await getLatestValidEnd(end);
 
   const users = await getUserList();
-  const leaderboard: Leaderboard = [];
+  const entries: LeaderboardEntry[] = [];
 
   // calculate stats for each user in parallel
   const promises = users.map(async (user) => {
@@ -50,11 +50,13 @@ export async function getLeaderboard(
       total_gains: totalGains,
       performance: calculatePerformance(totalCosts, totalGains),
     };
-    leaderboard.push(leaderboardEntry);
+    entries.push(leaderboardEntry);
   });
 
   await Promise.all(promises);
 
-  leaderboard.sort((a, b) => b.performance - a.performance);
-  return leaderboard;
+  entries.sort((a, b) => b.performance - a.performance);
+
+  // the window the ranking actually used, so the client can show where a bound was clamped to
+  return { start: windowStart, end: windowEnd, entries };
 }
