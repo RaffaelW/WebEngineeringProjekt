@@ -1,0 +1,60 @@
+.table-scroll {
+  overflow-x: auto;
+}
+
+.custom-range {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+.range-error {
+  flex-basis: 100%;
+  margin: 0.5rem 0 0;
+  color: var(--mat-sys-error);
+  font: var(--mat-sys-body-medium);
+}
+
+.window {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+
+.error-message {
+  padding: 2rem 0;
+  color: var(--mat-sys-error);
+  font: var(--mat-sys-body-medium);
+  text-align: center;
+}
+
+.positive {
+  color: #2e7d32;
+}
+
+.negative {
+  color: var(--mat-sys-error);
+}
+
+.skeleton {
+  display: block;
+  width: 100%;
+  max-width: 180px;
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--mat-sys-surface-container-high) 25%,
+    var(--mat-sys-surface-container-highest) 50%,
+    var(--mat-sys-surface-container-high) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}

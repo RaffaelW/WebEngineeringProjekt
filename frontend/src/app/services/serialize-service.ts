@@ -1,6 +1,6 @@
 import { Service } from "@angular/core";
 import { HistoryQuery, AssetHistory } from "../../../../models/history";
-import { LeaderboardQuery } from "../../../../models/leaderboard";
+import { Leaderboard, LeaderboardQuery } from "../../../../models/leaderboard";
 import {
   OrderbookQuery,
   Order,
@@ -11,7 +11,7 @@ import {
 } from "../../../../models/portfolio";
 import { IsoDate, IsoDateTime } from "../models/api";
 import { RawHistoryQuery, RawAssetHistory } from "../models/history";
-import { RawLeaderboardQuery } from "../models/leaderboard";
+import { RawLeaderboard, RawLeaderboardQuery } from "../models/leaderboard";
 import {
   RawOrderbookQuery,
   RawOrder,
@@ -39,6 +39,11 @@ export class SerializeService {
 
   toDate(time: IsoDateTime): Date {
     return new Date(time);
+  }
+
+  toDay(time: IsoDateTime): Date {
+    const utc: Date = new Date(time);
+    return new Date(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate());
   }
 
   private toOptionalIsoDate(date: Date | undefined): IsoDate | undefined {
@@ -101,6 +106,11 @@ export class SerializeService {
     return {
       start: this.toOptionalIsoDate(query.start),
       end: this.toOptionalIsoDate(query.end),
+      days: query.days,
     };
+  }
+
+  toLeaderboard(raw: RawLeaderboard): Leaderboard {
+    return { ...raw, start: this.toDay(raw.start), end: this.toDay(raw.end) };
   }
 }

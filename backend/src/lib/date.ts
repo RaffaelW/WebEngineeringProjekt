@@ -14,6 +14,15 @@ export function endOfDay(time: Date): Date {
   return day;
 }
 
+/**
+ * start of the day a number of calendar days before time
+ */
+export function daysBefore(time: Date, days: number): Date {
+  const day: Date = startOfDay(time);
+  day.setUTCDate(day.getUTCDate() - days);
+  return day;
+}
+
 export async function isTradeDay(date: Date): Promise<boolean> {
   const day: Date = startOfDay(date);
   const rawTradeDays: Date[] = await fetchTradingDays(day, day);
@@ -71,6 +80,27 @@ export async function getLatestTradedDay(date: Date): Promise<Date> {
 
   return previous;
 }
+
+/**
+ * Earliest trading day at or after date. Unlike getLatestTradedDay this needs no market
+ * clock, a window starting there only needs the session's first bar.
+ */
+export async function getNextTradingDay(date: Date): Promise<Date> {
+  const highLimit: Date = new Date(date);
+  highLimit.setUTCDate(highLimit.getUTCDate() + WINDOW_DAYS);
+
+  const tradingDays: Date[] = await fetchTradingDays(date, highLimit);
+
+  if (tradingDays.length === 0) {
+    throw new DateError(
+      `No trading day between ${startOfDay(date).toISOString()} and ${startOfDay(highLimit).toISOString()}`,
+    );
+  }
+
+  // ascending order, so the earliest trading day is the first one
+  return tradingDays[0];
+}
+
 /**
  * Check if the market is currently open.
  * @returns A promise that resolves to a boolean indicating if the market is open.
