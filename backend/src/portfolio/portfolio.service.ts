@@ -311,11 +311,11 @@ export async function getValidStart(start: Date | undefined): Promise<Date> {
     return new Date(0);
   }
 
-  if (!(await isTradeDay(start))) {
-    throw new NotATradeDayError(start);
+  if (await isTradeDay(start)) {
+    return startOfDay(start);
   }
 
-  return startOfDay(start);
+  return endOfDay(await getLatestTradedDay(start));
 }
 
 /**

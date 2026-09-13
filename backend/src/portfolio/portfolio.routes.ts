@@ -75,7 +75,7 @@ const statsSchema = z
           .map((ticker: string) => ticker.trim().toUpperCase())
           .filter(Boolean);
       }),
-    // must be a trading day, absent means the performance is measured from the very first order
+    // absent means the performance is measured from the very first order
     start: startDateSchema,
     // if not set the latest trading day is used, priced live while the market is open
     // and off that session's closing bar otherwise
