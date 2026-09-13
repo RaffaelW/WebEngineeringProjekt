@@ -3,7 +3,6 @@ import { HttpErrorResponse } from "@angular/common/http";
 import { Component, computed, DestroyRef, inject, OnInit, signal, viewChild } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatChipListbox, MatChipListboxChange, MatChipOption } from "@angular/material/chips";
-import { provideNativeDateAdapter } from "@angular/material/core";
 import { MatDatepickerInputEvent, MatDatepickerModule } from "@angular/material/datepicker";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -29,7 +28,7 @@ import { LeaderboardApi } from "../../services/leaderboard-api";
     PercentPipe,
     CurrencyPipe,
   ],
-  providers: [provideNativeDateAdapter()],
+  providers: [],
   templateUrl: "./leaderboard-page.html",
   styleUrl: "./leaderboard-page.scss",
 })
