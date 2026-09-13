@@ -2,6 +2,19 @@
   overflow-x: auto;
 }
 
+.custom-range {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+.range-error {
+  color: var(--mat-sys-error);
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
 .positive {
   color: #2e7d32;
 }

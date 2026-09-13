@@ -3,7 +3,38 @@
   <mat-chip-option value="year"> Last 365 days </mat-chip-option>
   <mat-chip-option value="month"> Last 30 days </mat-chip-option>
   <mat-chip-option value="week"> Last 7 days </mat-chip-option>
+  <mat-chip-option value="custom"> Custom </mat-chip-option>
 </mat-chip-listbox>
+
+@if (selectedTimeframe() === "custom") {
+  <div class="custom-range" aria-label="custom date range">
+    <mat-form-field>
+      <input
+        matInput
+        [matDatepicker]="startPicker"
+        [value]="customStart()"
+        placeholder="Start date"
+        (dateChange)="onStartDateChange($event)"
+      />
+      <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+      <mat-datepicker #startPicker></mat-datepicker>
+    </mat-form-field>
+    <mat-form-field>
+      <input
+        matInput
+        [matDatepicker]="endPicker"
+        [value]="customEnd()"
+        placeholder="End date"
+        (dateChange)="onEndDateChange($event)"
+      />
+      <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+      <mat-datepicker #endPicker></mat-datepicker>
+    </mat-form-field>
+  </div>
+  @if (customRangeInvalid()) {
+    <div class="range-error">Start must not be after end</div>
+  }
+}
 
 <div class="table-scroll">
   <table mat-table [dataSource]="rows()">
