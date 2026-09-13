@@ -1,6 +1,9 @@
 @if (!onAuthPage()) {
   <mat-toolbar class="app-toolbar">
-    <a class="app-brand" routerLink="/dashboard">{{ title() }}</a>
+    <a class="app-brand" routerLink="/dashboard">
+      <img class="app-logo" src="/favicon.svg" alt="FinanzVisu logo" />
+      {{ title() }}
+    </a>
   </mat-toolbar>
 
   <nav mat-tab-nav-bar [tabPanel]="tabPanel">
