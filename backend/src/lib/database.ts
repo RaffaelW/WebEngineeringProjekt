@@ -1,7 +1,7 @@
-import { Coverage, TimeFrame } from "@prisma/client";
 import { Bar } from "@alpacahq/alpaca-trade-api";
-import { prisma } from "./prisma.js";
+import { Coverage, Prisma, TimeFrame } from "@prisma/client";
 import { clampToAvailable } from "./alpaca.js";
+import { prisma } from "./prisma.js";
 
 export type Range = { start: Date; end: Date };
 
@@ -35,8 +35,9 @@ export async function checkCoverage(
   timeframe: TimeFrame,
   start: Date,
   end: Date,
+  client: Prisma.TransactionClient = prisma,
 ): Promise<boolean> {
-  const covered: Coverage | null = await prisma.coverage.findFirst({
+  const covered: Coverage | null = await client.coverage.findFirst({
     where: {
       assetId,
       timeframe,
@@ -74,40 +75,84 @@ export async function cacheBars(
     return;
   }
 
-  const covered: boolean = await checkCoverage(assetId, timeframe, requestedStart, requestedEnd);
-
-  if (covered) {
+  // fast path: a covered window stays covered (coverage only grows), so skip the lock
+  // and transaction for the common case instead of queueing behind writers
+  const alreadyCovered: boolean = await checkCoverage(
+    assetId,
+    timeframe,
+    requestedStart,
+    requestedEnd,
+  );
+  if (alreadyCovered) {
     return;
   }
 
-  await prisma.history.createMany({
-    data: bars.map((bar: Bar) => ({
-      assetId,
-      timeframe,
-      time: bar.timestamp,
-      high: bar.high,
-      low: bar.low,
-      open: bar.open,
-      close: bar.close,
-      volume: bar.volume,
-    })),
-    skipDuplicates: true,
-  });
+  // coverage maintenance is check-then-act and runs in one transaction per asset+timeframe,
+  // locked so concurrent writers (API requests and the seeding process can overlap) can never
+  // both miss the check and each claim an overlapping window that stays unmerged.
+  const lockKey: string = `${assetId}:${timeframe}`;
 
-  await prisma.coverage.createMany({
-    data: [{ assetId, timeframe, start: requestedStart, end: requestedEnd }],
-    skipDuplicates: true,
-  });
+  await prisma.$transaction(
+    async (tx) => {
+      // transaction-scoped advisory lock: the second writer waits here until the first one's
+      // commit, so the coverage re-check below reads the rows it just wrote
+      // spell-checker:ignore xact hashtext
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey})::bigint)`;
 
-  await unifyCoverageRanges(assetId, timeframe);
+      // authoritative check: the fast path was read outside the lock, and another writer
+      // may have claimed the same window since; only here is no writer in flight for the key
+      const covered: boolean = await checkCoverage(
+        assetId,
+        timeframe,
+        requestedStart,
+        requestedEnd,
+        tx,
+      );
+
+      if (covered) {
+        return;
+      }
+
+      await tx.history.createMany({
+        data: bars.map((bar: Bar) => ({
+          assetId,
+          timeframe,
+          time: bar.timestamp,
+          high: bar.high,
+          low: bar.low,
+          open: bar.open,
+          close: bar.close,
+          volume: bar.volume,
+        })),
+        skipDuplicates: true,
+      });
+
+      await tx.coverage.createMany({
+        data: [{ assetId, timeframe, start: requestedStart, end: requestedEnd }],
+        skipDuplicates: true,
+      });
+
+      await unifyCoverageRanges(assetId, timeframe, tx);
+    },
+    {
+      // seeding queues many writers on the advisory lock, each waiting its turn while its
+      // transaction is already open; the 5s default timeout leaves the queue no room to drain
+      maxWait: 10_000,
+      timeout: 30_000,
+    },
+  );
 }
 
 /**
  * Collapse overlapping and touching coverage rows of an asset into as few ranges as possible,
  * so a lookup only has to find a single row instead of stitching several together.
  */
-async function unifyCoverageRanges(assetId: number, timeframe: TimeFrame): Promise<void> {
-  const rows: Coverage[] = await prisma.coverage.findMany({
+async function unifyCoverageRanges(
+  assetId: number,
+  timeframe: TimeFrame,
+  client: Prisma.TransactionClient = prisma,
+): Promise<void> {
+  const rows: Coverage[] = await client.coverage.findMany({
     where: { assetId, timeframe },
     orderBy: [{ start: "asc" }],
   });
@@ -127,18 +172,18 @@ async function unifyCoverageRanges(assetId: number, timeframe: TimeFrame): Promi
 
   if (changedRows.length === 0) return;
 
-  await prisma.$transaction([
-    prisma.coverage.deleteMany({
-      where: { id: { in: changedRows.map((row: Coverage) => row.id) } },
-    }),
-    prisma.coverage.createMany({
-      data: merged.map((range: Range) => ({
-        assetId,
-        timeframe,
-        start: range.start,
-        end: range.end,
-      })),
-      skipDuplicates: true,
-    }),
-  ]);
+  // must be called inside the transaction holding the coverage lock, so delete+recreate
+  // stay atomic without a nested $transaction (a transaction client cannot start another)
+  await client.coverage.deleteMany({
+    where: { id: { in: changedRows.map((row: Coverage) => row.id) } },
+  });
+  await client.coverage.createMany({
+    data: merged.map((range: Range) => ({
+      assetId,
+      timeframe,
+      start: range.start,
+      end: range.end,
+    })),
+    skipDuplicates: true,
+  });
 }

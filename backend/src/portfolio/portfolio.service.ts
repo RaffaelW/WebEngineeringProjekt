@@ -9,11 +9,11 @@ import type {
   TransactionRequest,
 } from "../../../models/portfolio.d.ts";
 import {
-  clampToAvailable,
   fetchAssetHistory,
   fetchFirstBarOfDay,
   fetchLastBarOfDay,
   fetchLivePrice,
+  formingBoundary,
   getApproxBarAt,
   TickerNotFoundError,
 } from "../lib/alpaca.js";
@@ -85,9 +85,11 @@ export async function processOrder(order: TransactionRequest, userId: number): P
   // one spec so the bars fetched and the coverage written can never disagree
   const daily: TimeFrameSpec = timeFrames["1d"];
   // from the start of the order day, the daily bar of that day is stamped before the
-  // order itself. clamp once, so the window fetched is the window recorded as cached
+  // order itself. Snap the end to the day grid once, so the window fetched is the window
+  // recorded as cached and concurrent orders agree on it down to the ms. The current,
+  // still forming daily bar is never claimed, matching getHistory.
   const fetchStart: Date = startOfDay(order.time);
-  const clampedEnd: Date = clampToAvailable(new Date());
+  const clampedEnd: Date = new Date(formingBoundary(daily.min).getTime() - 1);
   const bars: Bar[] = await fetchAssetHistory(order.ticker, daily.alpaca, fetchStart, clampedEnd);
 
   // save data with timeframe 1day as cache

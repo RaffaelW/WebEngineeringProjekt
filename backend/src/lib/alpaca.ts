@@ -91,6 +91,18 @@ export function clampToAvailable(end: Date): Date {
   return end.getTime() > cutoff.getTime() ? cutoff : end;
 }
 
+/**
+ * Start of the current still-forming period, snapped to the timeframe's grid.
+ * Two callers within the same period always agree on the same boundary, so
+ * coverage windows never drift apart by the few ms each Date.now() is apart.
+ * @param periodMs one period in milliseconds (e.g. 60_000 for "1min", 86_400_000 for "1d")
+ * @param at anchor point (defaults to new Date())
+ */
+export function formingBoundary(periodMs: number, at: Date = new Date()): Date {
+  const cutoff: Date = clampToAvailable(at);
+  return new Date(Math.floor(cutoff.getTime() / periodMs) * periodMs);
+}
+
 export async function fetchAssetHistory(
   ticker: string,
   timeframe: values.TimeFrameString,
