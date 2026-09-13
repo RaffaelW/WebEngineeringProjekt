@@ -75,7 +75,9 @@ export class DashboardPage {
   protected readonly bars: WritableSignal<PortfolioBar[]> = signal<PortfolioBar[]>([]);
   protected readonly chartLoading: WritableSignal<boolean> = signal(true);
   protected readonly chartError: WritableSignal<string | null> = signal(null);
-  private chartRequestId: number = 0;
+
+  // one counter per load function, so a slow older response can't overwrite a newer one
+  private readonly requestIds: { stats: number; chart: number } = { stats: 0, chart: 0 };
 
   private readonly allowedTimeframes: Signal<Record<TimeFrameKey, boolean>> = computed(() => {
     const span: number = windowSpan(this.window(), new Date());
@@ -184,20 +186,27 @@ export class DashboardPage {
   }
 
   private async loadStats(): Promise<void> {
+    const requestId: number = ++this.requestIds.stats;
     this.loading.set(true);
     this.error.set(null);
     try {
       const stats: Stats[] = await firstValueFrom(this.portfolioApi.getStats());
-      this.stats.set(stats);
+      if (requestId === this.requestIds.stats) {
+        this.stats.set(stats);
+      }
     } catch {
-      this.error.set("Could not load portfolio");
+      if (requestId === this.requestIds.stats) {
+        this.error.set("Could not load portfolio");
+      }
     } finally {
-      this.loading.set(false);
+      if (requestId === this.requestIds.stats) {
+        this.loading.set(false);
+      }
     }
   }
 
   private async loadChart(): Promise<void> {
-    const requestId: number = ++this.chartRequestId;
+    const requestId: number = ++this.requestIds.chart;
     this.chartLoading.set(true);
     this.chartError.set(null);
 
@@ -210,15 +219,15 @@ export class DashboardPage {
           end,
         }),
       );
-      if (requestId === this.chartRequestId) {
+      if (requestId === this.requestIds.chart) {
         this.bars.set(bars);
       }
     } catch {
-      if (requestId === this.chartRequestId) {
+      if (requestId === this.requestIds.chart) {
         this.chartError.set("Could not load chart");
       }
     } finally {
-      if (requestId === this.chartRequestId) {
+      if (requestId === this.requestIds.chart) {
         this.chartLoading.set(false);
       }
     }
