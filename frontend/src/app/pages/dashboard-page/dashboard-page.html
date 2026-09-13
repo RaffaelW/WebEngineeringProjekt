@@ -1,3 +1,7 @@
+<section class="dashboard-toolbar">
+  <reloader (tick)="onReload()" />
+</section>
+
 <section class="stat-cards">
   @for (card of cards(); track card.label) {
     <stat-card [data]="card" [loading]="loading()" [error]="error()" />

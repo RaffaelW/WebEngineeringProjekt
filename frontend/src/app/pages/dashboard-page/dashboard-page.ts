@@ -9,6 +9,7 @@ import type { AutocompleteAsset } from "../../../../../models/asset.d.ts";
 import { PortfolioApi } from "../../services/portfolio-api";
 import { firstValueFrom } from "rxjs";
 import { Chart } from "../../components/chart/chart";
+import { Reloader } from "../../components/reloader/reloader";
 import { SearchArea } from "../../components/search-area/search-area";
 import { StatCard } from "../../components/stat-card/stat-card";
 import {
@@ -57,7 +58,7 @@ export interface StatCardData {
 
 @Component({
   selector: "app-dashboard-page",
-  imports: [Chart, SearchArea, StatCard],
+  imports: [Chart, Reloader, SearchArea, StatCard],
   templateUrl: "./dashboard-page.html",
   styleUrl: "./dashboard-page.scss",
 })
@@ -108,6 +109,10 @@ export class DashboardPage {
   );
 
   constructor() {
+    this.onReload();
+  }
+
+  protected onReload(): void {
     this.loadStats();
     this.loadChart();
   }
