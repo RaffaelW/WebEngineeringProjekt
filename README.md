@@ -95,6 +95,7 @@ pre-commit run --all-files
 - `frontend/` — Angular 22 app (standalone components, SCSS)
 - `backend/` — Express server (ESM, TypeScript)
 - `models/` — shared API contract, imported by both
+- `lib/` — shared runtime code, imported by both (e.g. the timeframe ranges)
 
 ### Shared models
 
@@ -116,4 +117,4 @@ describe the _deserialized_ shape. Each side reaches it differently:
   service converts between those and the shared models. Everything above that
   service works only with shared models.
 
-Because `models/` sits above both workspaces, `backend/tsconfig.build.json` spans the repo root.
+Because `models/` and `lib/` sit above both workspaces, `backend/tsconfig.build.json` spans the repo root.

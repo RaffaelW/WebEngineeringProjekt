@@ -1,5 +1,5 @@
 /*
-The editor/lint project: src, the shared models, and prisma.config.ts.
+The editor/lint project: src, the shared models and lib, the seed, and prisma.config.ts.
 tsconfig.build.json narrows this to what the server actually ships — its
 rootDir of ".." covers prisma.config.ts too, but that file is only ever run by
 the Prisma CLI, so it stays out of the build to keep it out of dist.
