@@ -20,6 +20,7 @@ import { Router } from "@angular/router";
 import { firstValueFrom } from "rxjs";
 import type { ApiMessage } from "../../../../../models/api.d.ts";
 import { AuthApi } from "../../services/auth-api";
+import { AuthState } from "../../services/auth-state";
 import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
 
 interface UsernameModel {
@@ -46,6 +47,7 @@ interface PasswordModel {
 })
 export class SettingsPage {
   private readonly authApi: AuthApi = inject(AuthApi);
+  private readonly authState: AuthState = inject(AuthState);
   private readonly router: Router = inject(Router);
   private readonly dialog: MatDialog = inject(MatDialog);
 
@@ -56,7 +58,7 @@ export class SettingsPage {
   protected readonly accountPending = signal<boolean>(false);
 
   private readonly usernameModel: WritableSignal<UsernameModel> = signal<UsernameModel>({
-    name: "",
+    name: this.authState.user()?.name ?? "",
   });
 
   // Mirrors the zod schema in backend/src/auth/auth.routes.ts.
@@ -92,12 +94,6 @@ export class SettingsPage {
     { submission: { action: (fieldTree) => this.submitPassword(fieldTree) } },
   );
 
-  constructor() {
-    firstValueFrom(this.authApi.getSession()).then((user) =>
-      this.usernameModel.set({ name: user.name }),
-    );
-  }
-
   protected async submitUsername(
     fieldTree: FieldTree<UsernameModel>,
   ): Promise<TreeValidationResult> {
@@ -105,7 +101,7 @@ export class SettingsPage {
     const { name } = fieldTree().value();
 
     try {
-      await firstValueFrom(this.authApi.update({ name }));
+      await this.authState.updateUsername(name);
       this.usernameSuccess.set("Username updated");
       return undefined;
     } catch (err: unknown) {
@@ -144,7 +140,7 @@ export class SettingsPage {
     this.accountPending.set(true);
 
     try {
-      await firstValueFrom(this.authApi.logout());
+      await this.authState.logout();
       await this.router.navigateByUrl("/auth");
     } catch (err: unknown) {
       this.accountError.set(this.errorMessage(err));
@@ -163,7 +159,7 @@ export class SettingsPage {
     this.accountPending.set(true);
 
     try {
-      await firstValueFrom(this.authApi.delete());
+      await this.authState.deleteAccount();
       await this.router.navigateByUrl("/auth");
     } catch (err: unknown) {
       this.accountError.set(this.errorMessage(err));

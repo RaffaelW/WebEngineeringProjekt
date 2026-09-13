@@ -17,4 +17,17 @@ export class AuthState {
     await firstValueFrom(this.authApi.logout());
     this.user.set(null);
   }
+
+  async updateUsername(name: string): Promise<void> {
+    await firstValueFrom(this.authApi.update({ name }));
+    const user = this.user();
+    if (user) {
+      this.user.set({ ...user, name });
+    }
+  }
+
+  async deleteAccount(): Promise<void> {
+    await firstValueFrom(this.authApi.delete());
+    this.user.set(null);
+  }
 }
