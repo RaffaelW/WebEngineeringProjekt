@@ -15,6 +15,84 @@ const orders = [
   // long-term holder since 2016 who trimmed the winners, still riding NVDA and TSLA
   [
     {
+      ticker: "AAPL",
+      transactionType: "buy" as const,
+      shares_amount: 100,
+      time: new Date("2016-02-10T15:30:00Z"),
+    },
+    {
+      ticker: "MSFT",
+      transactionType: "buy" as const,
+      shares_amount: 60,
+      time: new Date("2016-06-15T16:00:00Z"),
+    },
+    {
+      ticker: "NVDA",
+      transactionType: "buy" as const,
+      shares_amount: 150,
+      time: new Date("2017-03-08T16:45:00Z"),
+    },
+    {
+      ticker: "AMZN",
+      transactionType: "buy" as const,
+      shares_amount: 50,
+      time: new Date("2017-11-15T17:30:00Z"),
+    },
+    {
+      ticker: "AAPL",
+      transactionType: "sell" as const,
+      shares_amount: 50,
+      time: new Date("2018-09-12T18:00:00Z"),
+    },
+    {
+      ticker: "GOOGL",
+      transactionType: "buy" as const,
+      shares_amount: 40,
+      time: new Date("2019-05-08T15:30:00Z"),
+    },
+    {
+      ticker: "TSLA",
+      transactionType: "buy" as const,
+      shares_amount: 100,
+      time: new Date("2020-03-18T16:00:00Z"),
+    },
+    {
+      ticker: "MSFT",
+      transactionType: "sell" as const,
+      shares_amount: 60,
+      time: new Date("2020-11-11T16:45:00Z"),
+    },
+    {
+      ticker: "AMZN",
+      transactionType: "sell" as const,
+      shares_amount: 50,
+      time: new Date("2021-08-18T17:30:00Z"),
+    },
+    {
+      ticker: "MSFT",
+      transactionType: "buy" as const,
+      shares_amount: 20,
+      time: new Date("2022-06-15T18:00:00Z"),
+    },
+    {
+      ticker: "TSLA",
+      transactionType: "sell" as const,
+      shares_amount: 50,
+      time: new Date("2023-01-11T15:30:00Z"),
+    },
+    {
+      ticker: "NVDA",
+      transactionType: "sell" as const,
+      shares_amount: 100,
+      time: new Date("2024-02-14T16:00:00Z"),
+    },
+    {
+      ticker: "AMZN",
+      transactionType: "buy" as const,
+      shares_amount: 20,
+      time: new Date("2025-04-09T16:45:00Z"),
+    },
+    {
       ticker: "GOOGL",
       transactionType: "buy" as const,
       shares_amount: 20,
