@@ -9,13 +9,21 @@
 </section>
 
 <section class="dashboard-main">
-  <portfolio-chart
+  <price-chart
     [data]="chartData()"
     (windowChange)="onWindowChange($event)"
     (timeframeChange)="onTimeframeChange($event)"
   />
 
   <transaction-area [(selection)]="selection" [config]="transactionConfig" (submit)="onSubmit()" />
+</section>
+
+<section class="dashboard-asset">
+  <price-chart
+    [data]="assetChartData()"
+    (windowChange)="onAssetWindowChange($event)"
+    (timeframeChange)="onAssetTimeframeChange($event)"
+  />
 </section>
 
 <section class="dashboard-positions">

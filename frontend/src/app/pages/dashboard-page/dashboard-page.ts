@@ -1,9 +1,18 @@
 import { formatCurrency } from "@angular/common";
 import { HttpErrorResponse } from "@angular/common/http";
-import { Component, computed, inject, Signal, signal, WritableSignal } from "@angular/core";
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  Signal,
+  signal,
+  untracked,
+  WritableSignal,
+} from "@angular/core";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import type { ApiMessage } from "../../../../../models/api.d.ts";
-import type { TimeFrameKey } from "../../../../../models/history.d.ts";
+import type { AssetHistory, TimeFrameKey } from "../../../../../models/history.d.ts";
 import type {
   Order,
   PortfolioBar,
@@ -11,6 +20,7 @@ import type {
   TransactionType,
 } from "../../../../../models/portfolio.d.ts";
 import type { AutocompleteAsset } from "../../../../../models/asset.d.ts";
+import { HistoryApi } from "../../services/history-api";
 import { PortfolioApi } from "../../services/portfolio-api";
 import { firstValueFrom } from "rxjs";
 import { Chart } from "../../components/chart/chart";
@@ -20,10 +30,9 @@ import { TransactionArea } from "../../components/transaction-area/transaction-a
 import { StatCard } from "../../components/stat-card/stat-card";
 import { TransactionList } from "../../components/transaction-list/transaction-list";
 import {
-  isTimeFrameAllowed,
-  timeFrameKeys,
+  allowedTimeframesFor,
+  fallbackTimeframe,
   WindowKey,
-  windowSpan,
   windowStart,
 } from "../../lib/timeframe";
 
@@ -41,9 +50,15 @@ export interface TransactionAreaConfig {
   maxQueryLength: number;
 }
 
-// everything the chart card draws
+export interface ChartPoint {
+  time: Date;
+  value: number;
+}
+
 export interface ChartData {
-  bars: PortfolioBar[];
+  title: string;
+  points: ChartPoint[];
+  emptyMessage: string;
   loading: boolean;
   error: string | null;
   window: WindowKey;
@@ -106,6 +121,7 @@ export interface StatCardData {
 })
 export class DashboardPage {
   private readonly portfolioApi: PortfolioApi = inject(PortfolioApi);
+  private readonly historyApi: HistoryApi = inject(HistoryApi);
   private readonly snackBar: MatSnackBar = inject(MatSnackBar);
 
   private readonly stats: WritableSignal<Stats[]> = signal<Stats[]>([]);
@@ -119,34 +135,65 @@ export class DashboardPage {
   protected readonly chartLoading: WritableSignal<boolean> = signal(true);
   protected readonly chartError: WritableSignal<string | null> = signal(null);
 
+  protected readonly asset: WritableSignal<AutocompleteAsset | null> =
+    signal<AutocompleteAsset | null>(null);
+  protected readonly assetWindow: WritableSignal<WindowKey> = signal<WindowKey>("3M");
+  protected readonly assetTimeframe: WritableSignal<TimeFrameKey> = signal<TimeFrameKey>("1d");
+  protected readonly assetBars: WritableSignal<AssetHistory[]> = signal<AssetHistory[]>([]);
+  protected readonly assetChartLoading: WritableSignal<boolean> = signal(false);
+  protected readonly assetChartError: WritableSignal<string | null> = signal(null);
+
   protected readonly orders: WritableSignal<Order[]> = signal<Order[]>([]);
   protected readonly ordersLoading: WritableSignal<boolean> = signal(true);
   protected readonly ordersError: WritableSignal<string | null> = signal(null);
 
   // one counter per load function, so a slow older response can't overwrite a newer one
-  private readonly requestIds: { stats: number; chart: number; orderbook: number } = {
+  private readonly requestIds: {
+    stats: number;
+    chart: number;
+    assetChart: number;
+    orderbook: number;
+  } = {
     stats: 0,
     chart: 0,
+    assetChart: 0,
     orderbook: 0,
   };
 
-  private readonly allowedTimeframes: Signal<Record<TimeFrameKey, boolean>> = computed(() => {
-    const span: number = windowSpan(this.window(), new Date());
-    const allowed = {} as Record<TimeFrameKey, boolean>;
-    for (const key of timeFrameKeys) {
-      allowed[key] = isTimeFrameAllowed(key, span);
-    }
-    return allowed;
-  });
+  private readonly allowedTimeframes: Signal<Record<TimeFrameKey, boolean>> = computed(() =>
+    allowedTimeframesFor(this.window(), new Date()),
+  );
+
+  private readonly assetAllowedTimeframes: Signal<Record<TimeFrameKey, boolean>> = computed(() =>
+    allowedTimeframesFor(this.assetWindow(), new Date()),
+  );
 
   protected readonly chartData: Signal<ChartData> = computed<ChartData>(() => ({
-    bars: this.bars(),
+    title: "Portfolio",
+    points: this.bars(),
+    emptyMessage: "No data for this window",
     loading: this.chartLoading(),
     error: this.chartError(),
     window: this.window(),
     timeframe: this.timeframe(),
     allowedTimeframes: this.allowedTimeframes(),
   }));
+
+  protected readonly assetChartData: Signal<ChartData> = computed<ChartData>(() => {
+    const asset: AutocompleteAsset | null = this.asset();
+    return {
+      title: asset ? `${asset.name} (${asset.ticker})` : "Asset",
+      points: this.assetBars().map((bar: AssetHistory) => ({ time: bar.time, value: bar.close })),
+      emptyMessage: asset
+        ? "No data for this window"
+        : "Pick an asset in the transaction card to see its price",
+      loading: this.assetChartLoading(),
+      error: this.assetChartError(),
+      window: this.assetWindow(),
+      timeframe: this.assetTimeframe(),
+      allowedTimeframes: this.assetAllowedTimeframes(),
+    };
+  });
 
   protected readonly orderbookData: Signal<OrderbookData> = computed<OrderbookData>(() => ({
     orders: this.orders(),
@@ -187,42 +234,60 @@ export class DashboardPage {
     latestOrderTime: () => this.latestOrderTime(),
     maxQueryLength: 25,
   };
-  // selection of the transaction area, not wired into the queries yet
+  // selection of the transaction area
   protected readonly selection: WritableSignal<TransactionSelection> = signal(
     this.transactionConfig.defaultSelection(),
   );
 
   constructor() {
     this.onReload();
+
+    // an asset picked in the transaction form also shows up in the asset chart,
+    // clearing the form leaves the chart alone
+    effect(() => {
+      const picked: AutocompleteAsset | null = this.selection().asset;
+      if (picked !== null && picked.ticker !== untracked(this.asset)?.ticker) {
+        this.onAssetChange(picked);
+      }
+    });
   }
 
   protected onReload(): void {
     this.loadStats();
     this.loadChart();
     this.loadOrderbook();
+    if (this.asset() !== null) {
+      this.loadAssetChart();
+    }
   }
 
   protected onWindowChange(window: WindowKey): void {
     this.window.set(window);
-
-    const allowed: TimeFrameKey[] = timeFrameKeys.filter(
-      (key: TimeFrameKey) => this.allowedTimeframes()[key],
-    );
-    if (!allowed.includes(this.timeframe())) {
-      const current: number = timeFrameKeys.indexOf(this.timeframe());
-      const fallback: TimeFrameKey | undefined =
-        allowed.find((key: TimeFrameKey) => timeFrameKeys.indexOf(key) > current) ?? allowed.at(-1);
-      if (fallback !== undefined) {
-        this.timeframe.set(fallback);
-      }
-    }
-
+    this.timeframe.set(fallbackTimeframe(this.timeframe(), this.allowedTimeframes()));
     this.loadChart();
   }
 
   protected onTimeframeChange(timeframe: TimeFrameKey): void {
     this.timeframe.set(timeframe);
     this.loadChart();
+  }
+
+  private onAssetChange(asset: AutocompleteAsset): void {
+    this.asset.set(asset);
+    this.loadAssetChart();
+  }
+
+  protected onAssetWindowChange(window: WindowKey): void {
+    this.assetWindow.set(window);
+    this.assetTimeframe.set(
+      fallbackTimeframe(this.assetTimeframe(), this.assetAllowedTimeframes()),
+    );
+    this.loadAssetChart();
+  }
+
+  protected onAssetTimeframeChange(timeframe: TimeFrameKey): void {
+    this.assetTimeframe.set(timeframe);
+    this.loadAssetChart();
   }
 
   // market data is delayed by 15 minutes, so this is the latest time an order can be placed at
@@ -322,6 +387,56 @@ export class DashboardPage {
         this.chartLoading.set(false);
       }
     }
+  }
+
+  private async loadAssetChart(): Promise<void> {
+    const requestId: number = ++this.requestIds.assetChart;
+    const asset: AutocompleteAsset | null = this.asset();
+    this.assetChartError.set(null);
+
+    // nothing picked, nothing to draw
+    if (asset === null) {
+      this.assetBars.set([]);
+      this.assetChartLoading.set(false);
+      return;
+    }
+
+    this.assetChartLoading.set(true);
+    try {
+      const end: Date = new Date();
+      const bars: AssetHistory[] = await firstValueFrom(
+        this.historyApi.getHistory({
+          ticker: asset.ticker,
+          timeframe: this.assetTimeframe(),
+          start: windowStart(this.assetWindow(), end),
+          end,
+        }),
+      );
+      if (requestId === this.requestIds.assetChart) {
+        this.assetBars.set(bars);
+      }
+    } catch (error) {
+      if (requestId === this.requestIds.assetChart) {
+        this.assetChartError.set(this.assetChartErrorMessage(error));
+      }
+    } finally {
+      if (requestId === this.requestIds.assetChart) {
+        this.assetChartLoading.set(false);
+      }
+    }
+  }
+
+  // the backend answers 404 for unknown tickers and 400 for a window the timeframe can't cover
+  private assetChartErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      if (error.status === 404) {
+        return "Asset not found";
+      }
+      if (error.status === 400) {
+        return "Window not supported for this timeframe";
+      }
+    }
+    return "Could not load chart";
   }
 
   private async loadOrderbook(): Promise<void> {

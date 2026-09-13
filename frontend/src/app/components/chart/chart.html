@@ -1,7 +1,7 @@
 <mat-card appearance="outlined" class="chart-card">
   <mat-card-header>
     <mat-icon>show_chart</mat-icon>
-    <mat-card-subtitle>Portfolio</mat-card-subtitle>
+    <mat-card-subtitle>{{ data().title }}</mat-card-subtitle>
 
     <div class="controls">
       <div class="control">
@@ -42,8 +42,8 @@
       <div #chartHost class="chart-host" [class.hidden]="data().error !== null"></div>
       @if (data().error; as message) {
         <span class="chart-message chart-error">{{ message }}</span>
-      } @else if (!data().loading && data().bars.length === 0) {
-        <span class="chart-message">No data for this window</span>
+      } @else if (!data().loading && data().points.length === 0) {
+        <span class="chart-message">{{ data().emptyMessage }}</span>
       }
     </div>
   </mat-card-content>

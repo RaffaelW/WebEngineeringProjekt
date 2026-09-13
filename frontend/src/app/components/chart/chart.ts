@@ -18,16 +18,15 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
 import ApexCharts, { ApexOptions } from "apexcharts";
 import type { TimeFrameKey } from "../../../../../models/history.d.ts";
-import type { PortfolioBar } from "../../../../../models/portfolio.d.ts";
 import { timeFrameKeys, timeFrameLabels, WindowKey, windowKeys } from "../../lib/timeframe";
-import { ChartData } from "../../pages/dashboard-page/dashboard-page";
+import { ChartData, ChartPoint } from "../../pages/dashboard-page/dashboard-page";
 
 // x-axis
 type Series = { name: string; data: [number, number][] }[];
 type DataOptions = Required<Pick<ApexOptions, "series" | "tooltip">>;
 
 @Component({
-  selector: "portfolio-chart",
+  selector: "price-chart",
   imports: [MatCardModule, MatButtonToggleModule, MatIconModule, MatProgressBarModule],
   templateUrl: "./chart.html",
   styleUrl: "./chart.scss",
@@ -49,8 +48,7 @@ export class Chart implements OnChanges, AfterViewInit, OnDestroy {
   private chart: ApexCharts | null = null;
 
   ngOnChanges(): void {
-    const { bars, timeframe } = this.data();
-    this.chart?.updateOptions(this.formatToolTip(this.toSeries(bars), timeframe));
+    this.chart?.updateOptions(this.toDataOptions());
   }
 
   ngAfterViewInit(): void {
@@ -64,23 +62,24 @@ export class Chart implements OnChanges, AfterViewInit, OnDestroy {
     this.chart = null;
   }
 
-  private toSeries(bars: PortfolioBar[]): Series {
+  private toSeries(points: ChartPoint[]): Series {
     return [
       {
         name: "Value",
-        data: bars.map((bar: PortfolioBar) => [bar.time.getTime(), bar.value]),
-      },
-      /*       {
+        data: points.map((point: ChartPoint) => [point.time.getTime(), point.value]),
+      } /*
+      {
         name: "Invested",
         data: bars.map((bar: PortfolioBar) => [bar.time.getTime(), bar.invested]),
-      }, */
+      }, */,
     ];
   }
 
-  private formatToolTip(series: Series, timeframe: TimeFrameKey): DataOptions {
+  private toDataOptions(): DataOptions {
+    const { points, timeframe } = this.data();
     const intraday: boolean = timeframe === "1min" || timeframe === "1h";
     return {
-      series,
+      series: this.toSeries(points),
       tooltip: { x: { format: intraday ? "dd MMM yyyy HH:mm" : "dd MMM yyyy" } },
     };
   }
@@ -90,8 +89,7 @@ export class Chart implements OnChanges, AfterViewInit, OnDestroy {
   }
 
   private buildOptions(): ApexOptions {
-    const { bars, timeframe } = this.data();
-    const data: DataOptions = this.formatToolTip(this.toSeries(bars), timeframe);
+    const data: DataOptions = this.toDataOptions();
     return {
       series: data.series,
       chart: {

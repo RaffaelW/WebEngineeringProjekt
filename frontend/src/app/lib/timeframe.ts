@@ -1,5 +1,5 @@
 import type { TimeFrameKey } from "../../../../models/history.d.ts";
-import { TimeFrameRange, timeFrameRanges } from "../../../../lib/timeframe";
+import { TimeFrameRange, timeFrameKeys, timeFrameRanges } from "../../../../lib/timeframe";
 
 export * from "../../../../lib/timeframe";
 
@@ -46,4 +46,28 @@ export function windowStart(window: WindowKey, end: Date): Date {
 
 export function windowSpan(window: WindowKey, end: Date): number {
   return end.getTime() - windowStart(window, end).getTime();
+}
+
+export function allowedTimeframesFor(window: WindowKey, end: Date): Record<TimeFrameKey, boolean> {
+  const span: number = windowSpan(window, end);
+  const allowed = {} as Record<TimeFrameKey, boolean>;
+  for (const key of timeFrameKeys) {
+    allowed[key] = isTimeFrameAllowed(key, span);
+  }
+  return allowed;
+}
+
+// keeps current if allowed, otherwise the next coarser allowed timeframe, else the coarsest allowed
+export function fallbackTimeframe(
+  current: TimeFrameKey,
+  allowed: Record<TimeFrameKey, boolean>,
+): TimeFrameKey {
+  const keys: TimeFrameKey[] = timeFrameKeys.filter((key: TimeFrameKey) => allowed[key]);
+  if (keys.includes(current)) {
+    return current;
+  }
+  const index: number = timeFrameKeys.indexOf(current);
+  return (
+    keys.find((key: TimeFrameKey) => timeFrameKeys.indexOf(key) > index) ?? keys.at(-1) ?? current
+  );
 }
