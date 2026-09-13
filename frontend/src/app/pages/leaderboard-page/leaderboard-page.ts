@@ -1,6 +1,6 @@
 import { CurrencyPipe, PercentPipe } from "@angular/common";
 import { HttpErrorResponse } from "@angular/common/http";
-import { Component, computed, DestroyRef, inject, OnInit, signal } from "@angular/core";
+import { Component, computed, DestroyRef, inject, OnInit, signal, viewChild } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatChipListbox, MatChipListboxChange, MatChipOption } from "@angular/material/chips";
 import { provideNativeDateAdapter } from "@angular/material/core";
@@ -36,6 +36,7 @@ import { LeaderboardApi } from "../../services/leaderboard-api";
 export class LeaderboardPage implements OnInit {
   private readonly leaderboardApi = inject(LeaderboardApi);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly chipListbox = viewChild(MatChipListbox);
 
   private readonly skeletonRows = Array.from({ length: 5 }, () => null);
   protected readonly columnsToDisplay = ["rank", "trader", "return", "invested", "profit"];
@@ -88,6 +89,12 @@ export class LeaderboardPage implements OnInit {
   }
 
   onTimeframeChange(change: MatChipListboxChange) {
+    if (change.value === undefined) {
+      // a deselect must never clear the selection, snap the chip back to the current timeframe
+      this.chipListbox()?.writeValue(this.selectedTimeframe());
+      return;
+    }
+
     this.selectedTimeframe.set(change.value);
     if (change.value === "all") {
       return this.timeframe.next({ start: undefined, end: undefined });

@@ -1,4 +1,8 @@
-<mat-chip-listbox (change)="onTimeframeChange($event)" aria-label="select a timeframe">
+<mat-chip-listbox
+  [value]="selectedTimeframe()"
+  (change)="onTimeframeChange($event)"
+  aria-label="select a timeframe"
+>
   <mat-chip-option value="all" selected> All-time </mat-chip-option>
   <mat-chip-option value="year"> Last 365 days </mat-chip-option>
   <mat-chip-option value="month"> Last 30 days </mat-chip-option>
