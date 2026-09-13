@@ -13,8 +13,16 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
-.transaction-area mat-icon {
+.transaction-area mat-card-header > mat-icon:not(.transaction-hint) {
   order: -1;
+}
+
+.transaction-hint {
+  margin-left: auto;
+  font-size: 1.125rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  cursor: help;
 }
 
 .transaction-area mat-card-subtitle {

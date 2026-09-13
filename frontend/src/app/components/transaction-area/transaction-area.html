@@ -2,6 +2,13 @@
   <mat-card-header>
     <mat-icon>swap_horiz</mat-icon>
     <mat-card-subtitle>Transaction</mat-card-subtitle>
+    <mat-icon
+      class="transaction-hint"
+      matTooltip="Market data is 15 minutes delayed, so while the market is open orders can be placed at most 15 minutes before now. When the market is closed this limit does not apply. Every asset entered here is also shown in the chart below, independent of your portfolio."
+      matTooltipPosition="above"
+    >
+      info
+    </mat-icon>
   </mat-card-header>
   <mat-card-content>
     <mat-button-toggle-group

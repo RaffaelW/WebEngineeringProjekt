@@ -20,6 +20,7 @@ import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatTimepickerModule } from "@dhutaryan/ngx-mat-timepicker";
 import { catchError, debounceTime, map, Observable, of, switchMap } from "rxjs";
 import type { AutocompleteAsset } from "../../../../../models/asset.d.ts";
@@ -43,6 +44,7 @@ import { AssetApi } from "../../services/asset-api";
     MatButtonToggleModule,
     MatCardModule,
     MatIconModule,
+    MatTooltipModule,
   ],
   templateUrl: "./transaction-area.html",
   styleUrl: "./transaction-area.scss",
