@@ -6,7 +6,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatTableModule } from "@angular/material/table";
 import { firstValueFrom } from "rxjs";
-import { LeaderboardEntry, LeaderboardQuery } from "../../../../../models/leaderboard";
+import type { LeaderboardEntry, LeaderboardQuery } from "../../../../../models/leaderboard.d.ts";
 import { LeaderboardApi } from "../../services/leaderboard-api";
 
 type Timeframe = "all" | "year" | "month" | "week" | "custom";

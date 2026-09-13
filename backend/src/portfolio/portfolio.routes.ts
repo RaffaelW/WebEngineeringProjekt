@@ -154,9 +154,10 @@ router.route("/stats").get(requireAuth, validateQuery(statsSchema), async (req, 
 /**
  * Returns one candle per period for the portfolio as a whole.
  *
- * The shares are the ones held right now, weighted by their price on each bar, so value reads as
- * what the current portfolio would have been worth back then. invested is the money actually paid
- * for those shares and stays flat across the window, gain is the distance between the two.
+ * The shares on a bar are the ones held at its close, every order placed before the next bar
+ * already counts, so value reads as what the portfolio was actually worth back then and a sell-off
+ * shows as a drop. invested is the money paid for the shares held on that bar, gain is the
+ * distance between the two.
  */
 router.route("/chart").get(requireAuth, validateQuery(chartSchema), async (req, res) => {
   const { timeframe, start, end } = req.validatedQuery as ChartQuery;

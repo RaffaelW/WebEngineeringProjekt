@@ -12,7 +12,6 @@ to be passed after `--`, otherwise npm swallows them.
 | ------------------------------ | ----------------------------------------- |
 | `ng serve`                     | `npm run ng -- serve`                     |
 | `ng build`                     | `npm run ng -- build`                     |
-| `ng test`                      | `npm run ng -- test`                      |
 | `ng generate component <name>` | `npm run ng -- generate component <name>` |
 
 ## Project structure
@@ -22,7 +21,9 @@ src/app/
 ├── pages/        # smart components, one per route
 ├── components/   # dumb building blocks
 ├── services/     # API communication
-└── models/       # types of the API data
+├── guards/       # route guards
+├── lib/          # pure helpers, no Angular
+└── models/       # raw wire shapes of the API data
 ```
 
 **Pages** are the smart components. They hold the logic and state, talk to the API through
@@ -33,11 +34,19 @@ go back out via `output()`, and the page handles them. That keeps a component re
 that injects a service is tied to a single data source.
 
 **Services** handle the communication and mirror the backend: every router gets its own service,
-e.g. `AuthApiService` for `/api/auth/*`. If a response has to be reshaped for the UI, that
-happens here.
+e.g. `AuthApi` for `/api/auth/*`. If a response has to be reshaped for the UI, that happens here.
+Two services are not tied to a router: `AuthState` holds the signed-in user, `SerializeService`
+converts between the raw wire shapes and the shared models.
 
-**Models** hold the types of the data sent to and received from the API. `interface` for object
-shapes, `type` for unions (e.g. `type TransactionType = "buy" | "sell"`).
+**Guards** protect routes, e.g. `authGuard` redirects to `/auth` when the backend has no session.
+
+**Lib** holds pure helpers without Angular dependencies, e.g. the timeframe and window logic of
+the chart. It re-exports the shared `lib/` at the repository root.
+
+**Models** hold only the raw wire shapes (`Raw*`) of the endpoints whose JSON differs from the
+shared contract, i.e. everything that carries a date as ISO string, plus the `IsoDate` and
+`IsoDateTime` aliases. The API contract itself lives in `models/` at the repository root, see
+the root README.
 
 ## Development server
 
@@ -72,24 +81,6 @@ ng build
 ```
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
 
 ## Additional Resources
 

@@ -16,7 +16,7 @@ import { firstValueFrom } from "rxjs";
 import type { ApiMessage } from "../../../../../models/api.d.ts";
 import { AuthCard } from "../../components/auth-card/auth-card";
 import { AuthApi } from "../../services/auth-api";
-import { AuthCredentials } from "../../../../../models/auth.js";
+import type { AuthCredentials } from "../../../../../models/auth.d.ts";
 
 export type AuthMode = "login" | "register";
 
